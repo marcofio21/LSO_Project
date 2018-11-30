@@ -2,6 +2,8 @@
 
 int checked_p_range_input(int a, int b){
     char string[64];
+    char *buf_err = malloc(64 * sizeof(char));
+
     int input;
     int i;
     int exp;
@@ -14,7 +16,9 @@ int checked_p_range_input(int a, int b){
         exp = 0;
         temp_conv = 0;
         flag_err = 0;
-        fgets(string, 64, stdin);
+
+        //fgets(string, 64, stdin);
+        read(0,string,64);
 
         while(string[i]!=EOF && string[i]!='\n') {
             i++;
@@ -35,10 +39,11 @@ int checked_p_range_input(int a, int b){
             }
         }
         if((flag_err == 0) && (input >= a && (b==0 || input <= b))){
-            puts("");
+            write(0,"\n",1);
             return(input);
         }else {
-            puts("\n\nValore non corretto. Reinserire.\n\n");
+            sprintf(buf_err,"\n\nValore non corretto. Reinserire.\n\n");
+            write(2,buf_err,strlen(buf_err));
         }
     }
 }
