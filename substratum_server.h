@@ -10,6 +10,7 @@
 #include <fcntl.h>
 
 int                 pow_int                             (int a, int exp);
-int                 checked_p_range_input               (int a, int b);
+int                 checked_p_range_input               (char *input_string, int a, int b);
+int                 check_dot_addr                      (char *input, int length);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H
