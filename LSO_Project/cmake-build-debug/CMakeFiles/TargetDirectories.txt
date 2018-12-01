@@ -1,0 +1,3 @@
+/home/raspberry1/CLionProjects/LSO_Project/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/raspberry1/CLionProjects/LSO_Project/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/raspberry1/CLionProjects/LSO_Project/cmake-build-debug/CMakeFiles/_LSO_Project.dir

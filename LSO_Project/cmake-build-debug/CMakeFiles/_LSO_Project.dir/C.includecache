@@ -1,0 +1,46 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/raspberry1/CLionProjects/LSO_Project/main.c
+stdlib.h
+-
+stdio.h
+-
+unistd.h
+-
+string.h
+-
+sys/types.h
+-
+sys/stat.h
+-
+fcntl.h
+-
+substratum_server.h
+/home/raspberry1/CLionProjects/LSO_Project/substratum_server.h
+
+/home/raspberry1/CLionProjects/LSO_Project/substratum_server.c
+substratum_server.h
+/home/raspberry1/CLionProjects/LSO_Project/substratum_server.h
+
+/home/raspberry1/CLionProjects/LSO_Project/substratum_server.h
+stdlib.h
+-
+stdio.h
+-
+unistd.h
+-
+string.h
+-
+sys/types.h
+-
+sys/stat.h
+-
+fcntl.h
+-
+
