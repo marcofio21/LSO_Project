@@ -40,7 +40,7 @@ int checked_p_range_input(char *input_string, int a, int b){
                 i--;
             }
         }
-        if((flag_err == 0) && (input > a && (b==0 || input <= b))){
+        if((flag_err == 0) && (input > a && (input <= b))){
             return(input);
         }else {
             return(-1);
@@ -61,14 +61,13 @@ int pow_int(int a, int exp){
 }
 
 int check_dot_addr(char *input, int length){
-    int ret         = -1;
+    int ret         = 0;
     int check       = 0;
 
-    int dots = 0;
-    int colon = 0;
-    int n_of_int = 3;
-    int i = 0;
-    int len_check = length - 1; // decrementandolo controllo che alla fine del controllo non vi siano rimasti caratteri, altrimenti vuol dire che la stringa ha caratteri dopo la stringa corretta e quindi è sbagliata
+    int     dots            = 0;
+    int     colon           = 0;
+    int     n_of_int        = 3;
+    int     i               = 0;
 
     //valore di appoggio per il singolo carattere convertito ad int
     int unchecked_val = -1;
@@ -78,7 +77,7 @@ int check_dot_addr(char *input, int length){
     //la stringa con l'indirizzo non può cominciare con un punto.
     if (input[0] == '.') {check = -1;}
 
-    while(i<length && dots<3 && colon<2 && check == 0) {
+    while(i<length && dots<=3 && colon<=1 && check == 0) {
         //controllo che ci siano dei numeri e non altri caratteri.
         unchecked_val = input[i] - '0';
 
@@ -89,7 +88,9 @@ int check_dot_addr(char *input, int length){
         }else if(unchecked_val == -2){
             //trovato '.' e quindi aumento il numero di dots incontrati e controllo se sto nelle specifiche, ovvero al più due punti e non sia seguito da un altro punto
             ++dots;
-            if((input[i+1] - '0') == -2 || dots>2){check = -1;}
+            if((input[i+1] - '0') == -2|| dots>3){
+                check = -1;
+            }
             n_of_int = 3;
         }else if(unchecked_val == 10){
             //trovato ':', e quindi svolgo gli stessi controlli di sopra, ma modificando il numero di caratteri numerici che devono seguirlo
@@ -98,10 +99,9 @@ int check_dot_addr(char *input, int length){
             n_of_int = 4;
         }else{check = -1;}
         ++i;
-        --len_check;
     }
 
-    if(check != 0 ){
+    if(check != 0){
         sprintf(buf_err,"ERR_CONF_FILE_NOT_RIGHT_FORMAT");
         write(2,buf_err,strlen(buf_err));
         free(buf_err);
