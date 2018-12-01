@@ -5,7 +5,7 @@ char    *buf_err;
 
 int checked_p_range_input(char *input_string, int a, int b){
     char string[64];
-    char *buf_err = malloc(64 * sizeof(char));
+    bzero(string,sizeof(string));
 
     int input;
     int i;
@@ -22,11 +22,11 @@ int checked_p_range_input(char *input_string, int a, int b){
 
         strcpy(string,input_string);
 
-        while(string[i]!=EOF && string[i]!='\n') {
+        while(string[i]!=EOF && string[i]!='\n' && string[i]!='\0') {
             i++;
         }
 
-        i--;
+        --i;
 
         if(i>=0) {
             while (i >= 0) {
@@ -40,8 +40,7 @@ int checked_p_range_input(char *input_string, int a, int b){
                 i--;
             }
         }
-        if((flag_err == 0) && (input >= a && (b==0 || input <= b))){
-            write(0,"\n",1);
+        if((flag_err == 0) && (input > a && (b==0 || input <= b))){
             return(input);
         }else {
             return(-1);
@@ -53,7 +52,7 @@ int pow_int(int a, int exp){
     int ret = a;
     if(exp > 0){
         for(int i=2; i<=exp; i++) {
-            ret *= ret;
+            ret = ret * a;
         }
     }else if(exp == 0){
         ret = 1;
@@ -85,13 +84,12 @@ int check_dot_addr(char *input, int length){
 
         if (unchecked_val >= 0 && unchecked_val <= 9) {
             //trovato carattere numerico, quindi incremento per il prossimo carattere e decremento il numero di interi consentiti per quella sezione dell'indirizzo
-            ++i;
             --n_of_int;
             if (n_of_int < 0) { check = -1; }
         }else if(unchecked_val == -2){
             //trovato '.' e quindi aumento il numero di dots incontrati e controllo se sto nelle specifiche, ovvero al più due punti e non sia seguito da un altro punto
             ++dots;
-            if((input[i+1] - '0') != -2 || dots>2){check = -1;}
+            if((input[i+1] - '0') == -2 || dots>2){check = -1;}
             n_of_int = 3;
         }else if(unchecked_val == 10){
             //trovato ':', e quindi svolgo gli stessi controlli di sopra, ma modificando il numero di caratteri numerici che devono seguirlo
@@ -99,7 +97,7 @@ int check_dot_addr(char *input, int length){
             if(colon > 1){check = -1;}
             n_of_int = 4;
         }else{check = -1;}
-        i++;
+        ++i;
         --len_check;
     }
 

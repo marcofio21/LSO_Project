@@ -18,13 +18,13 @@ int main(int argc, char *argv[]) {
     char    *err_buf    = malloc(err_buf_dim * sizeof(char));
     char    *buf        = malloc(buf_dim * sizeof(char));
 
-    if(argc < 2){
+    /*if(argc == 0){
         sprintf(err_buf, "No Enought Args\n");
         write(2,err_buf,strlen(err_buf));
         exit(-1);
-    }
-    if(argc > 2){
-        sprintf(err_buf, "Too Many Args\n");
+    }*/
+    if(argc != 3){
+        sprintf(err_buf, "Wrong number of args\n");
         write(2,err_buf,strlen(err_buf));
         exit(-1);
     }
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     do{
         num_byte = read(fd,buf,buf_dim);
-        check = check_dot_addr(buf,(int)num_byte);
+        check = check_dot_addr(buf,((int)num_byte)-1);
         if(check!=0){exit(-1);}
 
 
