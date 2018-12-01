@@ -44,8 +44,7 @@ int checked_p_range_input(char *input_string, int a, int b){
             write(0,"\n",1);
             return(input);
         }else {
-            sprintf(buf_err,"\n\nThe inserted value is uncorrect, please reinsert correct.\n\n");
-            write(2,buf_err,strlen(buf_err));
+            return(-1);
         }
     }
 }
