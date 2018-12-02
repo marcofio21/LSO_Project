@@ -111,3 +111,75 @@ int check_dot_addr(char *input, int length){
 
     return(ret);
 }
+
+//messo void perchè non so se dovra ritornare qualcosa che ci serve
+void create_Server(int port,char ip){
+
+    int                  sockfd       =-1;
+    int                  acceptfd     =-1;
+    int                  result_aton  =-1;
+    int                  check        =-1;
+    struct  sockaddr_in  server_Addr     ;
+
+    buf_err = malloc(dim_buf_err * sizeof(char));
+
+    //riempio la struttura serverAddr che serve per identificare un servizio di rete(server)
+    server_Addr.sin_family   =AF_INET;
+    server_Addr.sin_port     = htons(port);
+
+    //conversione dot a binary
+    result_aton=inet_aton(&ip,&server_Addr.sin_addr);
+    if(result_aton<0){
+        sprintf(buf_err,"ERR_CONV_ADDR_ATON");
+        write(2,buf_err,strlen(buf_err));
+        free(buf_err);
+        exit(-1);
+    }
+
+    server_Addr.sin_addr.s_addr=htons(result_aton);
+
+    sockfd=socket(PF_INET,SOCK_STREAM,0);
+    if(sockfd<0){
+        sprintf(buf_err,"ERR_SOCKET");
+        write(2,buf_err,strlen(buf_err));
+        free(buf_err);
+        exit(-1);
+    }
+
+    check=bind(sockfd,(struct sockaddr *) &server_Addr, sizeof(server_Addr));
+    if(check<0){
+        sprintf(buf_err,"ERR_BIND");
+        write(2,buf_err,strlen(buf_err));
+        free(buf_err);
+        exit(-1);
+    }
+
+    //valore in ascolto messo a caso
+    check=listen(sockfd,200);
+    if(check<0){
+        sprintf(buf_err,"ERR_LISTEN");
+        write(2,buf_err,strlen(buf_err));
+        free(buf_err);
+        exit(-1);
+    }
+
+
+    //non ricordo il ciclo passivo passiva
+    while(1){
+
+        acceptfd = accept(sockfd, NULL, NULL);
+        if(acceptfd<0){
+            sprintf(buf_err,"ERR_ACCEPT");
+            write(2,buf_err,strlen(buf_err));
+            free(buf_err);
+            exit(-1);
+        }
+        //connessione con client stabilita
+
+        //chiude la connessione close(acceptfd);
+    }
+
+
+
+    //rende server irranggiungibile close(sockfd);
+}

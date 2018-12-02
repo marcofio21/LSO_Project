@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include "substratum_server.h"
 
+
+
 int main(int argc, char *argv[]) {
     int         i                           = 0;
     int         offset                      = 0;
@@ -22,6 +24,7 @@ int main(int argc, char *argv[]) {
     char    *err_buf    = malloc(err_buf_dim * sizeof(char));
     char    *buf        = malloc(buf_dim * sizeof(char));
     char    *addr       = malloc(addr_lenght * sizeof(char));
+
 
     if(argc != 3){
         sprintf(err_buf, "Wrong number of args\n");
