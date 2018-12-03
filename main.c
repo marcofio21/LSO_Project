@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
 
             list_server = insert(list_server, ret_addr);
 
+
             //Qua va creato il thread con la connessione al server.
         }
         ++i;
