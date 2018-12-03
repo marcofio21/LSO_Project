@@ -60,14 +60,18 @@ int pow_int(int a, int exp){
     return(ret);
 }
 
-int check_dot_addr(char *input, int length){
-    int ret         = 0;
+value_addr * check_dot_addr(char *input, int length){
     int check       = 0;
 
     int     dots            = 0;
     int     colon           = 0;
     int     n_of_int        = 3;
     int     i               = 0;
+
+    value_addr *ret         = NULL;
+    char *addr              = malloc(15 * sizeof(char));
+    bzero(addr,sizeof(*addr));
+    char *port              = malloc(4 * sizeof(char));
 
     //valore di appoggio per il singolo carattere convertito ad int
     int unchecked_val = -1;
@@ -84,13 +88,19 @@ int check_dot_addr(char *input, int length){
         if (unchecked_val >= 0 && unchecked_val <= 9) {
             //trovato carattere numerico, quindi incremento per il prossimo carattere e decremento il numero di interi consentiti per quella sezione dell'indirizzo
             --n_of_int;
+            if(colon == 0){
+                addr[i] = input[i];  //non è stato ancora trovato il doppio punto, quindi continuo a memorizzarmi la parte dell'indirizzo che è l'addr
+            }else{
+                port[i] = input[i];  //è stato trovato, quindi i seguenti 4 caratteri sono i 4 interi che compongono la porta
+            }
             if (n_of_int < 0) { check = -1; }
         }else if(unchecked_val == -2){
             //trovato '.' e quindi aumento il numero di dots incontrati e controllo se sto nelle specifiche, ovvero al più due punti e non sia seguito da un altro punto
             ++dots;
-            if((input[i+1] - '0') == -2|| dots>3){
-                check = -1;
-            }
+            if((input[i+1] - '0') == -2|| dots>3){check = -1;}
+
+             addr[i] = input[i];
+
             n_of_int = 3;
         }else if(unchecked_val == 10){
             //trovato ':', e quindi svolgo gli stessi controlli di sopra, ma modificando il numero di caratteri numerici che devono seguirlo
@@ -106,80 +116,81 @@ int check_dot_addr(char *input, int length){
         write(2,buf_err,strlen(buf_err));
         free(buf_err);
         buf_err = NULL;
-        return(-1);
+        free(ret);
+        return(NULL);
     }
+
+    ret = malloc(sizeof(value_addr));
+    ret->addr = addr;
+    ret->port = atoi(port);
 
     return(ret);
 }
 
 //messo void perchè non so se dovra ritornare qualcosa che ci serve
-void create_Server(int port,char ip){
+int create_socket(int port, char *ip) {
 
-    int                  sockfd       =-1;
-    int                  acceptfd     =-1;
-    int                  result_aton  =-1;
-    int                  check        =-1;
-    struct  sockaddr_in  server_Addr     ;
+    int sockfd = -1;
+    int acceptfd = -1;
+    int result_aton = -1;
+    int check = -1;
+    struct sockaddr_in server_addr;
 
     buf_err = malloc(dim_buf_err * sizeof(char));
 
     //riempio la struttura serverAddr che serve per identificare un servizio di rete(server)
-    server_Addr.sin_family   =AF_INET;
-    server_Addr.sin_port     = htons(port);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+
+    //Preparo il socket per individuare la connessione in ingresso
+    /*struct sockaddr_in          client_addr;
+    socklen_t                   *size_client_addr = malloc(sizeof(socklen_t));*/
 
     //conversione dot a binary
-    result_aton=inet_aton(&ip,&server_Addr.sin_addr);
-    if(result_aton<0){
-        sprintf(buf_err,"ERR_CONV_ADDR_ATON");
-        write(2,buf_err,strlen(buf_err));
+    result_aton = inet_aton(ip, &server_addr.sin_addr);
+    if (result_aton < 0) {
+        sprintf(buf_err, "ERR_CONV_ADDR_ATON");
+        write(2, buf_err, strlen(buf_err));
         free(buf_err);
         exit(-1);
     }
 
-    server_Addr.sin_addr.s_addr=htons(result_aton);
+    server_addr.sin_addr.s_addr = htons(result_aton);
 
-    sockfd=socket(PF_INET,SOCK_STREAM,0);
-    if(sockfd<0){
-        sprintf(buf_err,"ERR_SOCKET");
-        write(2,buf_err,strlen(buf_err));
+    sockfd = socket(PF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        sprintf(buf_err, "ERR_SOCKET");
+        write(2, buf_err, strlen(buf_err));
         free(buf_err);
         exit(-1);
     }
 
-    check=bind(sockfd,(struct sockaddr *) &server_Addr, sizeof(server_Addr));
-    if(check<0){
-        sprintf(buf_err,"ERR_BIND");
-        write(2,buf_err,strlen(buf_err));
+    check = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
+    if (check < 0) {
+        sprintf(buf_err, "ERR_BIND");
+        write(2, buf_err, strlen(buf_err));
         free(buf_err);
         exit(-1);
     }
 
     //valore in ascolto messo a caso
-    check=listen(sockfd,200);
-    if(check<0){
-        sprintf(buf_err,"ERR_LISTEN");
-        write(2,buf_err,strlen(buf_err));
+    check = listen(sockfd, 200);
+    if (check < 0) {
+        sprintf(buf_err, "ERR_LISTEN");
+        write(2, buf_err, strlen(buf_err));
         free(buf_err);
         exit(-1);
     }
 
+    return(sockfd);
+    /*
+       acceptfd = accept(sockfd, (struct sockaddr *)&client_addr, size_client_addr);
+       if(acceptfd<0){
+           sprintf(buf_err,"ERR_ACCEPT");
+           write(2,buf_err,strlen(buf_err));
+           free(buf_err);
+           exit(-1);
+       }*/
 
-    //non ricordo il ciclo passivo passiva
-    while(1){
-
-        acceptfd = accept(sockfd, NULL, NULL);
-        if(acceptfd<0){
-            sprintf(buf_err,"ERR_ACCEPT");
-            write(2,buf_err,strlen(buf_err));
-            free(buf_err);
-            exit(-1);
-        }
-        //connessione con client stabilita
-
-        //chiude la connessione close(acceptfd);
-    }
-
-
-
-    //rende server irranggiungibile close(sockfd);
+    //restituiamo il socket
 }

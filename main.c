@@ -6,8 +6,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "substratum_server.h"
+#include "list_server_addr.h"
 
-
+head_list_serv *list_server = NULL;
 
 int main(int argc, char *argv[]) {
     int         i                           = 0;
@@ -23,7 +24,9 @@ int main(int argc, char *argv[]) {
 
     char    *err_buf    = malloc(err_buf_dim * sizeof(char));
     char    *buf        = malloc(buf_dim * sizeof(char));
-    char    *addr       = malloc(addr_lenght * sizeof(char));
+    char    *readed_addr       = malloc(addr_lenght * sizeof(char));
+
+    value_addr *ret_addr =  NULL;
 
 
     if(argc != 3){
@@ -44,10 +47,14 @@ int main(int argc, char *argv[]) {
     while(read(fd, buf+i, 1) == 1) {
         if (buf[i] == '\n' || buf[i] == 0x0) {
             num_byte = i - offset;
-            strncpy(addr,buf+offset,(size_t)num_byte);
-            check = check_dot_addr(addr, num_byte);
-            if (check != 0) { exit(-1); }
+            strncpy(readed_addr,buf+offset,(size_t)num_byte);
+            ret_addr = check_dot_addr(readed_addr, num_byte);
+
+            if (!ret_addr) { exit(-1); }
             offset = i + 1;
+
+            list_server = insert(list_server, ret_addr);
+
             //Qua va creato il thread con la connessione al server.
         }
         ++i;
