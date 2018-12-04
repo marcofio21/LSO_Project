@@ -1,16 +1,15 @@
 #ifndef LSO_PROJECT_SUBSTRATUM_SERVER_H
 #define LSO_PROJECT_SUBSTRATUM_SERVER_H
 
-#include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <strings.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 #include <pthread.h>
 
 typedef struct returned_value_addr value_addr;

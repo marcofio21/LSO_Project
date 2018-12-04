@@ -6,6 +6,7 @@
 typedef struct node_list_server node_server;
 typedef struct list_server_head head_list_serv;
 
+
 struct list_server_head{
     node_server             *top_list;
     node_server             *bottom_list;
@@ -18,8 +19,9 @@ struct node_list_server{
     value_addr              *info_addr_server;
 };
 
-head_list_serv * insert(head_list_serv *head, value_addr *addr_server);
-head_list_serv * delete_all_list(head_list_serv *head);
-node_server *    read_sequential_node(head_list_serv *head);
+head_list_serv    * insert(head_list_serv *head, value_addr *addr_server);
+head_list_serv    * delete_all_list(head_list_serv *head);
+node_server       * read_sequential_node(head_list_serv *head);
+void              * commissiona_server(void* value);
 
 #endif //LSO_PROJECT_LIST_SERVER_ADDR_H

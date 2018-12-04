@@ -3,6 +3,8 @@
 int     dim_buf_err = 128;
 char    *buf_err;
 
+int errno;
+
 int checked_p_range_input(char *input_string, int a, int b){
     char string[64];
     bzero(string,sizeof(string));
@@ -140,7 +142,7 @@ int create_socket(int port, char *ip) {
 
     //riempio la struttura serverAddr che serve per identificare un servizio di rete(server)
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
+    server_addr.sin_port = htons((uint16_t )port);
 
     //Preparo il socket per individuare la connessione in ingresso
     /*struct sockaddr_in          client_addr;
@@ -155,7 +157,7 @@ int create_socket(int port, char *ip) {
         exit(-1);
     }
 
-    server_addr.sin_addr.s_addr = htons(result_aton);
+    server_addr.sin_addr.s_addr = htons((uint16_t )result_aton);
 
     sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -183,14 +185,52 @@ int create_socket(int port, char *ip) {
     }
 
     return(sockfd);
-    /*
-       acceptfd = accept(sockfd, (struct sockaddr *)&client_addr, size_client_addr);
-       if(acceptfd<0){
-           sprintf(buf_err,"ERR_ACCEPT");
-           write(2,buf_err,strlen(buf_err));
-           free(buf_err);
-           exit(-1);
-       }*/
 
-    //restituiamo il socket
+}
+
+void *commissiona_server(void* value){
+    int         err_buf_dim     = 128;
+    char        *err_buf        = malloc(err_buf_dim * sizeof(char));
+    int         buf_dim         = 30;
+    char        *buf            = malloc(buf_dim * sizeof(char));
+
+    int         sockfd          = -1;
+    int         entryfd         = -1;
+
+    ssize_t     n_byte          = 0;
+    //faccio fesso il compilatore
+    value_addr  *ret_addr     =(value_addr*) value;
+
+    //siccome tutti i thread leggono dalla struct ret_addr non deve essere sincronizzato
+    //creazione del socket
+
+    sockfd=create_socket(ret_addr->port, ret_addr->addr);
+    if(sockfd<0){
+        sprintf(err_buf,"ERR_CREATE_SOCKET_SERVER_COMM\n");
+        write(2,err_buf,strlen(err_buf));
+        free(err_buf);
+        exit(-1);
+    }
+
+    while(1){
+        entryfd = accept(sockfd,NULL,NULL);
+        if(entryfd<0){
+            /*  Va gestito il caso in cui non vi è una connessione attiva con gli altri server
+             * e quindi l'attesa che questi siano operativi.
+             * Per fare ciò, ogni thread sommerà uno ad una flag GLOBALE nel main.
+             * Se è 0, tutti i server sono connessi,
+             * Se è maggiore di 0, vi è almeno un thread non connesso con un server
+             * minore di 0, son cazzi.*/
+        }
+
+        n_byte = read(entryfd,buf,(size_t)buf_dim);
+        if(entryfd<0){
+            sprintf(err_buf,"ERR_READ_SERVER_COMM\nERRNO : %d\n",errno);
+            write(2,err_buf,strlen(err_buf));
+            free(err_buf);
+            exit(-1);
+        }
+
+    }
+
 }
