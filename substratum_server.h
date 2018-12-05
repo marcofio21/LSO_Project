@@ -27,5 +27,6 @@ int                 checked_p_range_input               (char *input_string, int
 value_addr *        check_dot_addr                      (char *input, int length);
 //crea un server e si mette in ascolto di 1 o piu client
 int                 create_socket                       (int port, char *ip);
+void                *commission_comm_server             (void *value);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H

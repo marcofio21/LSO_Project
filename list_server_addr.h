@@ -22,6 +22,5 @@ struct node_list_server{
 head_list_serv    * insert(head_list_serv *head, value_addr *addr_server);
 head_list_serv    * delete_all_list(head_list_serv *head);
 node_server       * read_sequential_node(head_list_serv *head);
-void              * commissiona_server(void* value);
 
 #endif //LSO_PROJECT_LIST_SERVER_ADDR_H

@@ -1,12 +1,9 @@
 cmake_minimum_required(VERSION 3.12)
 project(_LSO_Project C)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pthread")
+
 set(CMAKE_C_STANDARD 11)
 
-set(CMAKE_USE_PTHREADS_INIT true)
-set(CMAKE_USE_PTHREADS_INIT ON)
-
-find_package(Threads REQUIRED)
-
-add_executable(_LSO_Project main.c substratum_server.c substratum_server.h list_server_addr.c list_server_addr.h)
+add_executable(_LSO_Project server_main.c substratum_server.c substratum_server.h list_server_addr.c list_server_addr.h signal_func_server.c signal_func_server.h)
 

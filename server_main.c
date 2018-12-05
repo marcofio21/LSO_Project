@@ -15,6 +15,11 @@
 
 head_list_serv *list_server = NULL;
 
+int     num_no_conn_server = 0;
+int     *list_data_from_server = NULL; // per la search; quando viene eseguita, gli altri server devono comunicare
+// la loro coppia di chiave x e che valore ha associato y.
+
+
 int main(int argc, char *argv[]) {
     int         i                           = 0;
     int         offset                      = 0;
@@ -63,7 +68,8 @@ int main(int argc, char *argv[]) {
 
             list_server = insert(list_server, ret_addr);
 
-            check=pthread_create(&tid,NULL,&commissiona_server,ret_addr);
+            //Qua va creato il thread con la connessione al server.
+            check=pthread_create(&tid,NULL, &commission_comm_server,ret_addr);
             if(check!=0){
                 sprintf(err_buf,"ERR_CREATE_THREAD\n");
                 write(2,err_buf,strlen(err_buf));
@@ -72,7 +78,6 @@ int main(int argc, char *argv[]) {
                 exit(-1);
             }
 
-            //Qua va creato il thread con la connessione al server.
         }
         ++i;
     }

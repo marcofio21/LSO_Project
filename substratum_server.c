@@ -188,7 +188,7 @@ int create_socket(int port, char *ip) {
 
 }
 
-void *commissiona_server(void* value){
+void *commission_comm_server(void *value){
     int         err_buf_dim     = 128;
     char        *err_buf        = malloc(err_buf_dim * sizeof(char));
     int         buf_dim         = 30;
@@ -197,13 +197,15 @@ void *commissiona_server(void* value){
     int         sockfd          = -1;
     int         entryfd         = -1;
 
+    //serve a capire se si è già incrementato il conteggio dei server offline
+    int         no_such_server_connected = 0;
+
     ssize_t     n_byte          = 0;
-    //faccio fesso il compilatore
+
     value_addr  *ret_addr     =(value_addr*) value;
 
     //siccome tutti i thread leggono dalla struct ret_addr non deve essere sincronizzato
     //creazione del socket
-
     sockfd=create_socket(ret_addr->port, ret_addr->addr);
     if(sockfd<0){
         sprintf(err_buf,"ERR_CREATE_SOCKET_SERVER_COMM\n");
@@ -217,20 +219,18 @@ void *commissiona_server(void* value){
         if(entryfd<0){
             /*  Va gestito il caso in cui non vi è una connessione attiva con gli altri server
              * e quindi l'attesa che questi siano operativi.
-             * Per fare ciò, ogni thread sommerà uno ad una flag GLOBALE nel main.
-             * Se è 0, tutti i server sono connessi,
-             * Se è maggiore di 0, vi è almeno un thread non connesso con un server
-             * minore di 0, son cazzi.*/
-        }
+             */
 
-        n_byte = read(entryfd,buf,(size_t)buf_dim);
-        if(entryfd<0){
-            sprintf(err_buf,"ERR_READ_SERVER_COMM\nERRNO : %d\n",errno);
-            write(2,err_buf,strlen(err_buf));
-            free(err_buf);
-            exit(-1);
-        }
 
+
+        }else {
+            n_byte = read(entryfd, buf, (size_t) buf_dim);
+            if (entryfd < 0) {
+                sprintf(err_buf, "ERR_READ_SERVER_COMM\nERRNO : %d\n", errno);
+                write(2, err_buf, strlen(err_buf));
+                free(err_buf);
+                exit(-1);
+            }
+        }
     }
-
 }
