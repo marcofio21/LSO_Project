@@ -39,8 +39,8 @@ int main(int argc, char *argv[]) {
     value_addr *ret_addr =  NULL;
 
     //dichiarazione per i thread comunicazione tra i server
-    pthread_t tid;
-    pthread_t *tid_threads_comm_server = NULL;
+    /*pthread_t tid;
+    pthread_t *tid_threads_comm_server = NULL;*/
 
     if(argc != 3){
         sprintf(err_buf, "Wrong number of args\n");
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
             list_server = insert(list_server, ret_addr);
 
             //Qua va creato il thread con la connessione al server.
-            check=pthread_create(&tid,NULL, &commission_comm_server,ret_addr);
+            check = comm_thread(ret_addr);/*pthread_create(&tid,NULL, &commission_comm_server,ret_addr);*/
             if(check!=0){
                 sprintf(err_buf,"ERR_CREATE_THREAD\n");
                 write(2,err_buf,strlen(err_buf));

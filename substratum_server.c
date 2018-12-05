@@ -1,5 +1,6 @@
 #include "substratum_server.h"
 
+int     num_no_conn_server = 0;
 int     dim_buf_err = 128;
 char    *buf_err;
 
@@ -232,5 +233,17 @@ void *commission_comm_server(void *value){
                 exit(-1);
             }
         }
+        //vanno aggiunti comandi
     }
+}
+
+int comm_thread(value_addr *addr_server){
+    int check = 0;
+
+    pthread_t tid;
+    pthread_t *tid_threads_comm_server = NULL;
+
+    check = pthread_create(&tid,NULL, &commission_comm_server,addr_server);
+
+    return(check);
 }
