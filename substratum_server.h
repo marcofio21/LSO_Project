@@ -10,14 +10,15 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <pthread.h>
 
-typedef struct returned_value_addr value_addr;
+#include "list_library.h"
+#include "list_addr_functions.h"
 
-struct returned_value_addr{
-    int         port;
-    char        *addr;
-};
 
 //Calcola il valore di a elevato al valore intero di exp
 int                 pow_int                             (int a, int exp);

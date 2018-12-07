@@ -146,8 +146,7 @@ int create_socket(int port, char *ip) {
     server_addr.sin_port = htons((uint16_t )port);
 
     //Preparo il socket per individuare la connessione in ingresso
-    /*struct sockaddr_in          client_addr;
-    socklen_t                   *size_client_addr = malloc(sizeof(socklen_t));*/
+
 
     //conversione dot a binary
     result_aton = inet_aton(ip, &server_addr.sin_addr);
@@ -218,13 +217,22 @@ void *commission_comm_server(void *value){
     while(1){
         entryfd = accept(sockfd,NULL,NULL);
         if(entryfd<0){
-            /*  Va gestito il caso in cui non vi è una connessione attiva con gli altri server
-             * e quindi l'attesa che questi siano operativi.
-             */
 
 
+            if(no_such_server_connected == 0){
+                no_such_server_connected += 1;
+                num_no_conn_server += 1;
 
-        }else {
+                sleep(30);
+            }else{
+                sleep(30);
+            }
+        }else{
+            if(no_such_server_connected != 0){
+                no_such_server_connected = 0;
+                num_no_conn_server -= 1;
+            }
+
             n_byte = read(entryfd, buf, (size_t) buf_dim);
             if (entryfd < 0) {
                 sprintf(err_buf, "ERR_READ_SERVER_COMM\nERRNO : %d\n", errno);

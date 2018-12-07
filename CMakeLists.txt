@@ -5,5 +5,5 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pthread")
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(_LSO_Project server_main.c substratum_server.c substratum_server.h list_server_addr.c list_server_addr.h signal_func_server.c signal_func_server.h)
+add_executable(_LSO_Project server_main.c substratum_server.c substratum_server.h list_library.c list_library.h signal_func_server.c signal_func_server.h list_addr_functions.c list_addr_functions.h)
 
