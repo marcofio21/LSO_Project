@@ -130,7 +130,7 @@ value_addr * check_dot_addr(char *input, int length){
     return(ret);
 }
 
-//messo void perchè non so se dovra ritornare qualcosa che ci serve
+
 int create_socket(int port, char *ip) {
 
     int sockfd = -1;
@@ -175,7 +175,7 @@ int create_socket(int port, char *ip) {
         exit(-1);
     }
 
-    //valore in ascolto messo a caso
+
     check = listen(sockfd, 200);
     if (check < 0) {
         sprintf(buf_err, "ERR_LISTEN");
@@ -204,7 +204,7 @@ void *commission_comm_server(void *value){
 
     value_addr  *ret_addr     =(value_addr*) value;
 
-    //siccome tutti i thread leggono dalla struct ret_addr non deve essere sincronizzato
+
     //creazione del socket
     sockfd=create_socket(ret_addr->port, ret_addr->addr);
     if(sockfd<0){
