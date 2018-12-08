@@ -1,10 +1,12 @@
 #include "substratum_server.h"
 
 //Lista server per la comunicazione interna.
-head_list *list_server_address = NULL;
+head_list *server_address_list = NULL;
 
-int     *list_data_from_server = NULL;  // per la search; quando viene eseguita, gli altri server devono comunicare
-                                        // la loro coppia di chiave x e che valore ha associato y.
+int     *data_from_server_list = NULL;  // per la search; quando viene eseguita, gli altri server devono comunicare la loro coppia di chiave x e che valore ha associato y.
+
+//LISTA COPPIE.
+head_list *data_couples_list =  NULL;
 
 int main(int argc, char *argv[]) {
     int         i                           = 0;
@@ -13,6 +15,8 @@ int main(int argc, char *argv[]) {
     int         fd                          = -1;
     int         check                       = 0;
     int         num_byte                    = -1;
+
+    int         num_server                  = 0;
 
     size_t      buf_dim                     = 350;
     int         err_buf_dim                 = 128;
@@ -38,8 +42,9 @@ int main(int argc, char *argv[]) {
     fd = open(argv[1], O_RDONLY);
     if(fd<0){sprintf(err_buf,"ERR_OPEN_FILE\n\n");write(2,err_buf,strlen(err_buf));exit(-1);}
 
-    list_server_address = create_list();
+    server_address_list = create_list();
 
+    //Andrà spostato in una funzione apposta.
     while(read(fd, buf+i, 1) == 1) {
         if (buf[i] == '\n' || buf[i] == 0x0) {
             num_byte = i - offset;
@@ -49,10 +54,11 @@ int main(int argc, char *argv[]) {
             if (!ret_addr) { exit(-1); }
             offset = i + 1;
 
-            list_server_address = insert_node(list_server_address,ret_addr,&create_addr_server_node,&insert_addr_server_node);
+            server_address_list = insert_node(server_address_list,ret_addr,&create_addr_server_node,&insert_addr_server_node);
 
             //Qua va creato il thread con la connessione al server.
             check = comm_thread(ret_addr);
+            ++num_server;
             if(check!=0){
                 sprintf(err_buf,"ERR_CREATE_THREAD\n");
                 write(2,err_buf,strlen(err_buf));
@@ -64,5 +70,30 @@ int main(int argc, char *argv[]) {
         }
         ++i;
     }
-    sleep(1);
+    //fin qui.
+
+    int retry_conn_count = 0;
+    while(check_conn_other_server() != num_server && retry_conn_count < 10){
+        ++retry_conn_count;
+        sprintf(buf,"Tentativo %d di Connessione con gli altri server...\n",retry_conn_count);
+        write(0,buf,strlen(buf));
+        bzero(buf,sizeof(*buf));
+
+        sleep(10);
+    }
+
+    if(retry_conn_count<10) {
+        sprintf(buf, "\n\nConnessione Stabilita!\n\n");
+        write(0,buf,strlen(buf));
+        bzero(buf,sizeof(*buf));
+    }else{
+        sprintf(buf, "\n\nImpossibile stabile connessione con gli altri server.\n");
+        write(0,buf,strlen(buf));
+        bzero(buf,sizeof(*buf));
+        exit(-1);
+    }
+    data_couples_list = create_list();
+
+    /* Gestione threads per i client
+     * Gestione comandi client */
 }

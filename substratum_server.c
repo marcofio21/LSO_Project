@@ -1,6 +1,6 @@
 #include "substratum_server.h"
 
-int     num_no_conn_server = 0;
+int     num_conn_server = 0;
 int     dim_buf_err = 128;
 char    *buf_err;
 
@@ -137,29 +137,27 @@ int create_socket(int port, char *ip) {
 
     int sockfd = -1;
     int acceptfd = -1;
-    int result_aton = -1;
+    int check_aton = 1;
     int check = -1;
-    struct sockaddr_in server_addr;
+
+    struct sockaddr_in server_addr ;
 
     buf_err = malloc(dim_buf_err * sizeof(char));
 
     //riempio la struttura serverAddr che serve per identificare un servizio di rete(server)
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons((uint16_t )port);
-
-    //Preparo il socket per individuare la connessione in ingresso
-
+    server_addr.sin_port = htons((uint16_t)port);
+    check_aton = inet_aton(ip,&server_addr.sin_addr);
 
     //conversione dot a binary
-    result_aton = inet_aton(ip, &server_addr.sin_addr);
-    if (result_aton < 0) {
+    if (check_aton == 0) {
         sprintf(buf_err, "ERR_CONV_ADDR_ATON");
         write(2, buf_err, strlen(buf_err));
         free(buf_err);
         exit(-1);
     }
 
-    server_addr.sin_addr.s_addr = htons((uint16_t )result_aton);
+    /*server_addr.sin_addr.s_addr = htons((uint16_t )&(server_addr.sin_addr));*/
 
     sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -204,11 +202,11 @@ void *commission_comm_server(void *value){
 
     ssize_t     n_byte          = 0;
 
-    value_addr  *ret_addr     =(value_addr*) value;
+    value_addr  *server_addr       = value;
 
 
     //creazione del socket
-    sockfd=create_socket(ret_addr->port, ret_addr->addr);
+    sockfd=create_socket(server_addr->port, server_addr->addr);
     if(sockfd<0){
         sprintf(err_buf,"ERR_CREATE_SOCKET_SERVER_COMM\n");
         write(2,err_buf,strlen(err_buf));
@@ -223,7 +221,7 @@ void *commission_comm_server(void *value){
 
             if(no_such_server_connected == 0){
                 no_such_server_connected += 1;
-                num_no_conn_server += 1;
+                num_conn_server += 1;
 
                 sleep(30);
             }else{
@@ -232,7 +230,7 @@ void *commission_comm_server(void *value){
         }else{
             if(no_such_server_connected != 0){
                 no_such_server_connected = 0;
-                num_no_conn_server -= 1;
+                num_conn_server -= 1;
             }
 
             n_byte = read(entryfd, buf, (size_t) buf_dim);
@@ -256,4 +254,8 @@ int comm_thread(value_addr *addr_server){
     check = pthread_create(&tid,NULL, &commission_comm_server,addr_server);
 
     return(check);
+}
+
+int check_conn_other_server(){
+    return(num_conn_server);
 }
