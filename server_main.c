@@ -18,9 +18,9 @@ int main(int argc, char *argv[]) {
     int         err_buf_dim                 = 128;
     size_t      addr_lenght                 = 21;
 
-    char    *err_buf    = malloc(err_buf_dim * sizeof(char));
-    char    *buf        = malloc(buf_dim * sizeof(char));
-    char    *readed_addr       = malloc(addr_lenght * sizeof(char));
+    char    *err_buf                        = malloc(err_buf_dim * sizeof(char));
+    char    *buf                            = malloc(buf_dim * sizeof(char));
+    char    *readed_addr                    = malloc(addr_lenght * sizeof(char));
 
     value_addr *ret_addr =  NULL;
 
@@ -38,6 +38,7 @@ int main(int argc, char *argv[]) {
     fd = open(argv[1], O_RDONLY);
     if(fd<0){sprintf(err_buf,"ERR_OPEN_FILE\n\n");write(2,err_buf,strlen(err_buf));exit(-1);}
 
+    list_server_address = create_list();
 
     while(read(fd, buf+i, 1) == 1) {
         if (buf[i] == '\n' || buf[i] == 0x0) {
@@ -63,4 +64,5 @@ int main(int argc, char *argv[]) {
         }
         ++i;
     }
+    sleep(1);
 }

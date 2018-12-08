@@ -64,12 +64,13 @@ int pow_int(int a, int exp){
 }
 
 value_addr * check_dot_addr(char *input, int length){
-    int check       = 0;
+    int     check           = 0;
 
     int     dots            = 0;
     int     colon           = 0;
     int     n_of_int        = 3;
     int     i               = 0;
+    int     port_i          = 0;
 
     value_addr *ret         = NULL;
     char *addr              = malloc(15 * sizeof(char));
@@ -94,7 +95,8 @@ value_addr * check_dot_addr(char *input, int length){
             if(colon == 0){
                 addr[i] = input[i];  //non è stato ancora trovato il doppio punto, quindi continuo a memorizzarmi la parte dell'indirizzo che è l'addr
             }else{
-                port[i] = input[i];  //è stato trovato, quindi i seguenti 4 caratteri sono i 4 interi che compongono la porta
+                port[port_i] = input[i];  //è stato trovato, quindi i seguenti 4 caratteri sono i 4 interi che compongono la porta
+                ++port_i;
             }
             if (n_of_int < 0) { check = -1; }
         }else if(unchecked_val == -2){

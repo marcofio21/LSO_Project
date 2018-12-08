@@ -6,8 +6,8 @@ void * create_addr_server_node (void *data){
 
     if(data) {
         new_node = malloc(sizeof(node_server_addr));
-        new_node->addr = ((node_server_addr *) data)->addr;
-        new_node->port = ((node_server_addr *) data)->port;
+        new_node->addr = ((value_addr *) data)->addr;
+        new_node->port = ((value_addr *) data)->port;
         new_node->next = NULL;
 
         ret = new_node;
@@ -17,8 +17,12 @@ void * create_addr_server_node (void *data){
 
 head_list * insert_addr_server_node (head_list *head, void *node){
     if(head && node){
-        ((node_server_addr *)(head->bottom_list))->next = node;
-        head->bottom_list = ((node_server_addr *)(head->bottom_list))->next;
+        if(head->top_list && head->bottom_list) {
+            ((node_server_addr *) head->bottom_list)->next = node;
+            head->bottom_list = ((node_server_addr *) head->bottom_list)->next;
+        }else{
+            head->top_list = head->bottom_list = node;
+        }
     }
 
     return (head);
