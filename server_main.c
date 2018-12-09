@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     //fin qui.
 
     int retry_conn_count = 0;
-    while(check_conn_other_server() != num_server && retry_conn_count < 10){
+    while(get_num_conn_o_server() != num_server && retry_conn_count < 10){
         ++retry_conn_count;
         sprintf(buf,"Tentativo %d di Connessione con gli altri server...\n",retry_conn_count);
         write(0,buf,strlen(buf));
