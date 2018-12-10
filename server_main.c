@@ -44,7 +44,6 @@ int main(int argc, char *argv[]) {
 
     server_address_list = create_list();
 
-    //Andrà spostato in una funzione apposta.
     while(read(fd, buf+i, 1) == 1) {
         if (buf[i] == '\n' || buf[i] == 0x0) {
             num_byte = i - offset;
@@ -70,10 +69,25 @@ int main(int argc, char *argv[]) {
         }
         ++i;
     }
-    //fin qui.
+
+    int *check_end = malloc(sizeof(int));
+    *check_end = 0;
+    num_conn_server = server_address_list->num_node;
+
+    do {
+        value_addr *temp_addr = NULL;
+        temp_addr = get_addr_server_node(server_address_list,check_end);
+        /* ERRORE LISTA RITORNA VALORE A CAZZO */
+
+        if(temp_addr) {
+            /*CREAZIONE NUOVO THREAD : fa la connect verso tutti gli altri server.
+             * effettua 10 tentativi, dopodiché, se non funziona, spegne tutto*/
+            check_conn_o_server_thread(temp_addr);
+        }
+    }while(*check_end == 0);
 
     int retry_conn_count = 0;
-    while(get_num_conn_o_server() != num_server && retry_conn_count < 10){
+    while(num_conn_server != 0 && retry_conn_count < 10){
         ++retry_conn_count;
         sprintf(buf,"Tentativo %d di Connessione con gli altri server...\n",retry_conn_count);
         write(0,buf,strlen(buf));

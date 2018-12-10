@@ -1,6 +1,5 @@
 #include "substratum_server.h"
 
-int     num_conn_server = 0;
 int     dim_buf_err = 128;
 char    *buf_err;
 
@@ -135,12 +134,6 @@ value_addr *    check_dot_addr(char *input, int length){
 }
 
 
-//Getter
-
-int             get_num_conn_o_server(){
-    return(num_conn_server);
-}
-
 
 //Factories
 
@@ -201,6 +194,8 @@ int             create_socket(int port, char *ip) {
 }
 
 
+
+
 //Gestione Connessione con altri server
 
 void *          check_conn_o_server(void *server_addr_in){
@@ -208,9 +203,6 @@ void *          check_conn_o_server(void *server_addr_in){
     int                 fd_socket                       = -1;
 
     int                 retry_conn_count                = 0;
-
-    //serve a capire se si è già incrementato il conteggio dei server offline
-    int                 no_such_server_connected        = 0;
 
     value_addr          *server_addr                    = server_addr_in;
     struct sockaddr_in  *test_conn_serv                 = malloc(sizeof(struct sockaddr_in));
@@ -224,16 +216,10 @@ void *          check_conn_o_server(void *server_addr_in){
     while(connected == -1 && retry_conn_count < 10){
         connected = connect(fd_socket, (struct sockaddr *)test_conn_serv, sizeof(*test_conn_serv));
         if(connected == -1){
-            if(no_such_server_connected == 0){
-                no_such_server_connected += 1;
-            }
             sleep(5);
             ++retry_conn_count;
         }else{
-            if(no_such_server_connected > 0) {
-                no_such_server_connected = 0;
-            }
-            num_conn_server += 1;
+            num_conn_server -= 1;
             close(fd_socket);
         }
     }
@@ -254,8 +240,9 @@ int             check_conn_o_server_thread(value_addr *addr_server_to_check){
     check = pthread_create(&tid_check_conn_thread,NULL,&check_conn_o_server,addr_server_to_check);
     if(check<0){exit(-1);}
 
+    /*
     pthread_join(tid_check_conn_thread,&ret);
-    if(ret){check = -1;}
+    if(ret){check = -1;}*/
 
     return (check);
 }
@@ -273,7 +260,6 @@ void *          commission_comm_server(void *server_addr_in){
 
     value_addr  *server_addr       = server_addr_in;
 
-
     //creazione del socket
     sockfd=create_socket(server_addr->port, server_addr->addr);
     if(sockfd<0){
@@ -282,10 +268,6 @@ void *          commission_comm_server(void *server_addr_in){
         free(err_buf);
         exit(-1);
     }
-
-    /*CREAZIONE NUOVO THREAD : fa la connect verso tutti gli altri server.
-     * effettua 10 tentativi, dopodiché, se non funziona, spegne tutto*/
-    check_conn_o_server_thread(server_addr_in);
 
     while(1){
         entryfd = accept(sockfd,NULL,NULL);
@@ -310,9 +292,7 @@ int             comm_thread(value_addr *addr_server){
     int check = 0;
 
     pthread_t tid;
-
     check = pthread_create(&tid,NULL, &commission_comm_server,addr_server);
-
 
     return(check);
 }

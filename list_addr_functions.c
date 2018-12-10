@@ -23,6 +23,7 @@ head_list * insert_addr_server_node (head_list *head, void *node){
         }else{
             head->top_list = head->bottom_list = node;
         }
+        head->num_node += 1;
     }
 
     return (head);

@@ -19,6 +19,7 @@
 #include "list_library.h"
 #include "list_addr_functions.h"
 
+int num_conn_server;
 
 //Calcola il valore di a elevato al valore intero di exp.
 int                 pow_int                             (int a, int exp);
@@ -35,9 +36,6 @@ int                 comm_thread                         (value_addr *addr_server
 /*
 void *              commission_comm_server              (void *server_addr_in);
 */
-
-//Restituisce lo stato della connessione con gli altri server
-int                 get_num_conn_o_server               ();
 
 //Funzione richiamata dal Thread che si occupa del controllo della disponibilità degli altri server.
 void *              check_conn_o_server                 (void *server_addr_in);
