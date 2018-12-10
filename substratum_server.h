@@ -28,11 +28,11 @@ int                 pow_int                             (int a, int exp);
 int                 checked_p_range_input               (char *input_string, int a, int b);
 
 //Controlla che il formato delle stringhe date in input, rispetti il formato richiesto dalle specifiche per il file di configurazione.
-value_addr *        check_dot_addr                      (char *input, int length);
+node_server_addr * check_dot_addr                      (char *input, int length);
 
 //crea un server e si mette in ascolto di 1 o piu client
 int                 create_socket                       (int port, char *ip);
-int                 comm_thread                         (value_addr *addr_server);
+int                 comm_thread                         (node_server_addr *addr_server);
 /*
 void *              commission_comm_server              (void *server_addr_in);
 */
@@ -41,6 +41,6 @@ void *              commission_comm_server              (void *server_addr_in);
 void *              check_conn_o_server                 (void *server_addr_in);
 
 //Funzione che controlla lo stato della connessione con un server.
-int                 check_conn_o_server_thread(value_addr *addr_server_to_check);
+int                 check_conn_o_server_thread(node_server_addr *addr_server_to_check);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H

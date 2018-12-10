@@ -6,8 +6,8 @@ void * create_addr_server_node (void *data){
 
     if(data) {
         new_node = malloc(sizeof(node_server_addr));
-        new_node->addr = ((value_addr *) data)->addr;
-        new_node->port = ((value_addr *) data)->port;
+        new_node->addr = ((node_server_addr *) data)->addr;
+        new_node->port = ((node_server_addr *) data)->port;
         new_node->next = NULL;
 
         ret = new_node;
@@ -33,7 +33,7 @@ void * search_addr_server_node (head_list *head, void * key){
     void *ret = NULL;
     if(head && key){
         node_server_addr *p = head->top_list;
-        value_addr *conv_key = key;
+        node_server_addr *conv_key = key;
         while(p && !ret){
             if((strcmp((conv_key->addr),p->addr)) == 0 && p->port == conv_key->port){
                 ret = p;
@@ -48,7 +48,7 @@ void * search_addr_server_node (head_list *head, void * key){
 void modify_addr_server_node(void *node, void *new_value){
     if(node && new_value){
         node_server_addr *p = node;
-        value_addr *conv_new_value = new_value;
+        node_server_addr *conv_new_value = new_value;
 
         strcpy(p->addr,conv_new_value->addr);
         p->port = conv_new_value->port;

@@ -64,7 +64,7 @@ int             pow_int(int a, int exp){
     return(ret);
 }
 
-value_addr *    check_dot_addr(char *input, int length){
+node_server_addr *    check_dot_addr(char *input, int length){
     int     check           = 0;
 
     int     dots            = 0;
@@ -73,7 +73,7 @@ value_addr *    check_dot_addr(char *input, int length){
     int     i               = 0;
     int     port_i          = 0;
 
-    value_addr *ret         = NULL;
+    node_server_addr *ret         = NULL;
     char *addr              = malloc(15 * sizeof(char));
     bzero(addr,sizeof(*addr));
     char *port              = malloc(4 * sizeof(char));
@@ -126,7 +126,7 @@ value_addr *    check_dot_addr(char *input, int length){
         return(NULL);
     }
 
-    ret = malloc(sizeof(value_addr));
+    ret = malloc(sizeof(node_server_addr));
     ret->addr = addr;
     ret->port = atoi(port);
 
@@ -204,7 +204,7 @@ void *          check_conn_o_server(void *server_addr_in){
 
     int                 retry_conn_count                = 0;
 
-    value_addr          *server_addr                    = server_addr_in;
+    node_server_addr    *server_addr                    = server_addr_in;
     struct sockaddr_in  *test_conn_serv                 = malloc(sizeof(struct sockaddr_in));
 
     test_conn_serv->sin_family = AF_INET;
@@ -231,7 +231,7 @@ void *          check_conn_o_server(void *server_addr_in){
     return(NULL);
 }
 
-int             check_conn_o_server_thread(value_addr *addr_server_to_check){
+int             check_conn_o_server_thread(node_server_addr *addr_server_to_check){
     int check = 0;
     void *ret = NULL;
 
@@ -258,7 +258,7 @@ void *          commission_comm_server(void *server_addr_in){
 
     ssize_t     n_byte          = 0;
 
-    value_addr  *server_addr       = server_addr_in;
+    node_server_addr  *server_addr       = server_addr_in;
 
     //creazione del socket
     sockfd=create_socket(server_addr->port, server_addr->addr);
@@ -288,7 +288,7 @@ void *          commission_comm_server(void *server_addr_in){
     }
 }
 
-int             comm_thread(value_addr *addr_server){
+int             comm_thread(node_server_addr *addr_server){
     int check = 0;
 
     pthread_t tid;

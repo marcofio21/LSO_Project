@@ -5,7 +5,7 @@
 #include "list_library.h"
 
 typedef struct node_server_address node_server_addr;
-typedef struct value_addr value_addr;
+/*typedef struct value_addr value_addr;*/
 
 struct node_server_address{
     char                    *addr;
@@ -13,10 +13,12 @@ struct node_server_address{
     node_server_addr        *next;
 };
 
+/*
 struct value_addr{
     int         port;
     char        *addr;
 };
+ */
 
 void *          create_addr_server_node     (void *data);
 

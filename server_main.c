@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     char    *buf                            = malloc(buf_dim * sizeof(char));
     char    *readed_addr                    = malloc(addr_lenght * sizeof(char));
 
-    value_addr *ret_addr =  NULL;
+    node_server_addr *ret_addr =  NULL;
 
     if(argc != 3){
         sprintf(err_buf, "Wrong number of args\n");
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     num_conn_server = server_address_list->num_node;
 
     do {
-        value_addr *temp_addr = NULL;
+        node_server_addr *temp_addr = NULL;
         temp_addr = get_addr_server_node(server_address_list,check_end);
         /* ERRORE LISTA RITORNA VALORE A CAZZO */
 
