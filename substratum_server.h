@@ -16,8 +16,8 @@
 #include <fcntl.h>
 #include <pthread.h>
 
-#include "list_library.h"
-#include "list_addr_functions.h"
+#include "Lists/list_library.h"
+#include "Lists/list_addr/list_addr_functions.h"
 
 int num_conn_server;
 
@@ -28,19 +28,17 @@ int                 pow_int                             (int a, int exp);
 int                 checked_p_range_input               (char *input_string, int a, int b);
 
 //Controlla che il formato delle stringhe date in input, rispetti il formato richiesto dalle specifiche per il file di configurazione.
-node_server_addr * check_dot_addr                      (char *input, int length);
+server_addr *       check_dot_addr                      (char *input, int length);
 
 //crea un server e si mette in ascolto di 1 o piu client
 int                 create_socket                       (int port, char *ip);
-int                 comm_thread                         (node_server_addr *addr_server);
-/*
-void *              commission_comm_server              (void *server_addr_in);
-*/
+int                 comm_thread                         (server_addr *addr_server);
+
 
 //Funzione richiamata dal Thread che si occupa del controllo della disponibilità degli altri server.
-void *              check_conn_o_server                 (void *server_addr_in);
+void *              check_conn_oth_server(void *server_addr_in);
 
 //Funzione che controlla lo stato della connessione con un server.
-int                 check_conn_o_server_thread(node_server_addr *addr_server_to_check);
+pthread_t           create_t_check_conn_oth_server(server_addr *addr_server_to_check);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H

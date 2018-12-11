@@ -2,7 +2,7 @@
 
 //Lista server per la comunicazione interna.
 head_list               *server_address_list    = NULL;
-node_server_addr        *this_server_addr       = NULL;
+server_addr             *this_server_addr       = NULL;
 
 int     *data_from_server_list = NULL;  // per la search; quando viene eseguita, gli altri server devono comunicare la loro coppia di chiave x e che valore ha associato y.
 
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     char    *buf                            = malloc(buf_dim * sizeof(char));
     char    *readed_addr                    = malloc(addr_lenght * sizeof(char));
 
-    node_server_addr *ret_addr =  NULL;
+    server_addr *ret_addr =  NULL;
 
     if(argc != 3){
         sprintf(err_buf, "Wrong number of args\n");
@@ -56,8 +56,7 @@ int main(int argc, char *argv[]) {
             offset = i + 1;
 
             if(j>=1) {
-                server_address_list = insert_node(server_address_list, ret_addr, &create_addr_server_node,
-                                                  &insert_addr_server_node);
+                server_address_list = insert_node(server_address_list, ret_addr);
             }else{
                 this_server_addr = ret_addr;
                 ++j;
@@ -81,13 +80,13 @@ int main(int argc, char *argv[]) {
     num_conn_server = server_address_list->num_node;
 
     do {
-        node_server_addr *temp_addr = NULL;
-        temp_addr = get_addr_server_node(server_address_list,check_end);
+        server_addr *temp_addr = NULL;
+        temp_addr = read_sequential_node(server_address_list,check_end);
 
         if(temp_addr) {
-            /*CREAZIONE NUOVO THREAD : fa la connect verso tutti gli altri server.
-             * effettua 10 tentativi, dopodiché, se non funziona, spegne tutto*/
-            check_conn_o_server_thread(temp_addr);
+            /*CREAZIONE NUOVO THREAD : fa la connect verso uno dei server della lista*/
+            create_t_check_conn_oth_server(temp_addr);
+
         }
     }while(*check_end == 0);
 
