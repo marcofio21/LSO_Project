@@ -1,7 +1,8 @@
 #include "substratum_server.h"
 
 //Lista server per la comunicazione interna.
-head_list *server_address_list = NULL;
+head_list               *server_address_list    = NULL;
+node_server_addr        *this_server_addr       = NULL;
 
 int     *data_from_server_list = NULL;  // per la search; quando viene eseguita, gli altri server devono comunicare la loro coppia di chiave x e che valore ha associato y.
 
@@ -10,6 +11,7 @@ head_list *data_couples_list =  NULL;
 
 int main(int argc, char *argv[]) {
     int         i                           = 0;
+    int         j                           = 0;
     int         offset                      = 0;
 
     int         fd                          = -1;
@@ -53,21 +55,25 @@ int main(int argc, char *argv[]) {
             if (!ret_addr) { exit(-1); }
             offset = i + 1;
 
-            server_address_list = insert_node(server_address_list,ret_addr,&create_addr_server_node,&insert_addr_server_node);
-
-            //Qua va creato il thread con la connessione al server.
-            check = comm_thread(ret_addr);
-            ++num_server;
-            if(check!=0){
-                sprintf(err_buf,"ERR_CREATE_THREAD\n");
-                write(2,err_buf,strlen(err_buf));
-                free(err_buf);
-                err_buf = NULL;
-                exit(-1);
+            if(j>=1) {
+                server_address_list = insert_node(server_address_list, ret_addr, &create_addr_server_node,
+                                                  &insert_addr_server_node);
+            }else{
+                this_server_addr = ret_addr;
+                ++j;
             }
-
         }
         ++i;
+    }
+
+    check = comm_thread(this_server_addr);
+    ++num_server;
+    if(check!=0){
+        sprintf(err_buf,"ERR_CREATE_THREAD\n");
+        write(2,err_buf,strlen(err_buf));
+        free(err_buf);
+        err_buf = NULL;
+        exit(-1);
     }
 
     int *check_end = malloc(sizeof(int));
@@ -77,7 +83,6 @@ int main(int argc, char *argv[]) {
     do {
         node_server_addr *temp_addr = NULL;
         temp_addr = get_addr_server_node(server_address_list,check_end);
-        /* ERRORE LISTA RITORNA VALORE A CAZZO */
 
         if(temp_addr) {
             /*CREAZIONE NUOVO THREAD : fa la connect verso tutti gli altri server.

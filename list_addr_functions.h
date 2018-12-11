@@ -13,13 +13,6 @@ struct node_server_address{
     node_server_addr        *next;
 };
 
-/*
-struct value_addr{
-    int         port;
-    char        *addr;
-};
- */
-
 void *          create_addr_server_node     (void *data);
 
 head_list *     insert_addr_server_node     (head_list *head, void *node);
