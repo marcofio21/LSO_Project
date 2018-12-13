@@ -89,16 +89,24 @@ void * read_sequential_node (head_list *head, int *f_end_list){
 }
 
 int modify_node(head_list *head, node_list *node_to_modify, void *new_value, FCOMPVALUE fcompvalue) {
-    void *node = NULL;
-    if(head){
-        node = search_node(head,node_to_modify,fcompvalue);
-        if(node){
-            return(1);
-        }else{
-            return(0);
+    if(head && node_to_modify && new_value) {
+        void *node = NULL;
+        node = search_node(head, node_to_modify, fcompvalue);
+        if (node) {
+            return (1);
+        } else {
+            return (0);
         }
     }
 
     return(-1);
 }
 
+node_list * get_head_list(head_list *list){
+    node_list *ret = NULL;
+    if(list){
+        ret = list->top_list;
+        list->top_list = list->top_list->next;
+    }
+    return(ret);
+}

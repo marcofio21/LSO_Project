@@ -19,7 +19,22 @@
 #include "Lists/list_library.h"
 #include "Lists/list_addr/list_addr_functions.h"
 
+typedef struct other_server_check_panel_cell    check_panel_cell;
+typedef struct other_server_check_panel         check_panel;
+
+struct other_server_check_panel{
+    int                     num_of_rows;
+    check_panel_cell        *panel;
+};
+
+struct other_server_check_panel_cell{
+    server_addr             *server;
+    int                     position;
+    int                     status;             // 0 : online, 1 : offline, -1 : timeout
+};
+
 int num_conn_server;
+check_panel          main_panel;
 
 //Calcola il valore di a elevato al valore intero di exp.
 int                 pow_int                             (int a, int exp);
@@ -36,9 +51,13 @@ int                 comm_thread                         (server_addr *addr_serve
 
 
 //Funzione richiamata dal Thread che si occupa del controllo della disponibilità degli altri server.
-void *              check_conn_oth_server(void *server_addr_in);
+void *              thread_oth_server_job(void *cell_server);
 
 //Funzione che controlla lo stato della connessione con un server.
-pthread_t           create_t_check_conn_oth_server(server_addr *addr_server_to_check);
+pthread_t           thread_oth_server(check_panel_cell *server_to_check_cell);
+
+head_list *         create_main_panel(head_list *list);
+
+int             check_conn_to_other_server();
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H

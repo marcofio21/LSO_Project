@@ -28,6 +28,6 @@ void *                  search_node             (head_list *head, node_list *nod
 head_list *             delete_all_node         (head_list *head);
 void *                  read_sequential_node    (head_list *head, int * f_end_list);
 int                     modify_node             (head_list *head, node_list *node_to_modify, void *new_value, FCOMPVALUE fcompvalue);
-
+node_list *             get_head_list           (head_list *list);
 
 #endif //LSO_PROJECT_LIST_SERVER_ADDR_H
