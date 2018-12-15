@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
-    //Creo la lista ed il nodo d'appoggio per l'inserimento
+    //Creo la lista degli altri server e del loro stato.
     servers_check_list = create_list();
     check_servers_node *temp    = NULL;
 
@@ -97,7 +97,6 @@ int main(int argc, char *argv[]) {
         reading_point = servers_check_list->top_list;
         do {
             /*CREAZIONE NUOVO THREAD : fa la connect verso uno dei server della lista*/
-            /*t = read_sequential_node(servers_check_list,end_list);*/
             t = reading_point->value;
             reading_point = reading_point->next;
             thread_oth_server(t);

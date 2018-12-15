@@ -134,8 +134,7 @@ server_addr *    check_dot_addr(char *input, int length){
 }
 
 
-
-//Factories
+//Genera un socket in ascolto con BINDING
 
 int             create_socket(int port, char *ip) {
 
@@ -192,8 +191,6 @@ int             create_socket(int port, char *ip) {
     return(sockfd);
 
 }
-
-
 
 
 //Controllo Connessione con altri server
@@ -263,7 +260,6 @@ int             check_conn_to_other_server(){
         return(-1);
     }
 }
-
 
 
 //Sincronizzazione con gli altri Server.

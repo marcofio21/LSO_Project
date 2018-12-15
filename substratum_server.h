@@ -32,7 +32,6 @@ int                 checked_p_range_input               (char *input_string, int
 server_addr *       check_dot_addr                      (char *input, int length);
 
 //crea un server e si mette in ascolto di 1 o piu client
-int                 create_socket                       (int port, char *ip);
 int                 comm_thread                         (server_addr *addr_server);
 
 
