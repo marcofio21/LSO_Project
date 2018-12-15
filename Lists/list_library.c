@@ -80,6 +80,7 @@ void * read_sequential_node (head_list *head, int *f_end_list){
             ret = head->reading_point->value;
             head->reading_point = head->reading_point->next;
             if (!head->reading_point) {
+                head->reading_point = NULL;
                 *f_end_list = 1;
             }
         }

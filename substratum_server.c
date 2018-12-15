@@ -198,39 +198,37 @@ int             create_socket(int port, char *ip) {
 
 //Controllo Connessione con altri server
 
-void *          thread_oth_server_job(void *cell_server){
+void *          thread_oth_server_job(void *server_node){
     int                 connected                       = -1;
     int                 fd_socket                       = -1;
 
-    int                 retry_conn_count                = 0;
-
-    check_panel_cell    *cell_to_elab                   = cell_server;
-    struct sockaddr_in  *test_conn_serv                 = malloc(sizeof(struct sockaddr_in));
+    check_servers_node    *node_to_elab                 = server_node;
+    struct sockaddr_in    *test_conn_serv               = malloc(sizeof(struct sockaddr_in));
 
     test_conn_serv->sin_family = AF_INET;
-    test_conn_serv->sin_port = htons((uint16_t)cell_to_elab->server->port);  //ERRORE
-    inet_aton(cell_to_elab->server->addr,&test_conn_serv->sin_addr);
+    test_conn_serv->sin_port = htons((uint16_t)node_to_elab->server->port);
+    inet_aton(node_to_elab->server->addr,&test_conn_serv->sin_addr);
 
     fd_socket = socket(PF_INET,SOCK_STREAM,0);
 
     connected = connect(fd_socket, (struct sockaddr *)test_conn_serv, sizeof(*test_conn_serv));
 
     if(connected == -1) {
-        (main_panel.panel)[cell_to_elab->position].status = 1;
+        node_to_elab->status = 1;
     }else {
-        (main_panel.panel)[cell_to_elab->position].status = 0; //qui
+        node_to_elab->status = 0;
         close(fd_socket);
     }
 
     return(NULL);
 }
 
-pthread_t       thread_oth_server(check_panel_cell *server_to_check_cell){
+pthread_t       thread_oth_server(check_servers_node *server_to_check){
     int check = 0;
 
     pthread_t tid_check_conn_thread;
 
-    check = pthread_create(&tid_check_conn_thread,NULL, &thread_oth_server_job,server_to_check_cell);
+    check = pthread_create(&tid_check_conn_thread,NULL, &thread_oth_server_job,server_to_check);
     if(check<0){exit(-1);}
 
 
@@ -238,17 +236,32 @@ pthread_t       thread_oth_server(check_panel_cell *server_to_check_cell){
 }
 
 int             check_conn_to_other_server(){
-    int ret = 1;
-    int i = 0;
-    int idex_limit= main_panel.num_of_rows - 1;
-    while(((main_panel.panel)[i]).status == 0 && i <= idex_limit){
-        i++;
-    }
+    if(servers_check_list) {
+        int ret = 1;
+        int finded_offline_server = 0;
 
-    if(i > idex_limit){
-        ret = 0;
+        int *end_list = malloc(sizeof(int));
+        *end_list = 0;
+
+        check_servers_node  *temp                = NULL;
+        node_list           *reading_point       = servers_check_list->top_list;
+
+        do {
+            temp = reading_point->value;
+            reading_point = reading_point->next;
+            if(temp->status == 1){
+                finded_offline_server = 1;
+            }
+        } while (reading_point && finded_offline_server == 0);
+
+        if(finded_offline_server == 0){
+            ret = 0;
+        }
+
+        return (ret);
+    }else{
+        return(-1);
     }
-    return(ret);
 }
 
 
@@ -303,30 +316,4 @@ int             comm_thread(server_addr *addr_server){
     check = pthread_create(&tid,NULL, &commission_comm_server,addr_server);
 
     return(check);
-}
-
-
-//Crea il main panel, dalla lista d'appoggio per gli indirizzi e la cancella
-head_list * create_main_panel(head_list *list){
-    int *end_list = malloc(sizeof(int));
-    *end_list = 0;
-
-    main_panel.num_of_rows = list->num_node;
-    node_list   *extracted_node = NULL;
-    server_addr *value          = NULL;
-
-    main_panel.panel = malloc(list->num_node * sizeof(check_panel_cell));
-
-    int i = 0;
-    while(i <= (list->num_node)-1){
-        extracted_node = get_head_list(list);
-        value = extracted_node->value;
-        (main_panel.panel)[i].server    = value;
-        (main_panel.panel)[i].status    = 1;
-        (main_panel.panel)[i].position  = i;
-        i++;
-    }
-
-    list = delete_all_node(list);
-    return(list);
 }
