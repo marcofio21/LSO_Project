@@ -18,6 +18,7 @@
 
 #include "Lists/list_library.h"
 #include "Lists/list_addr/list_addr_functions.h"
+#include "message_func_server.h"
 
 
 head_list       *servers_check_list;

@@ -29,16 +29,12 @@ int main(int argc, char *argv[]) {
     server_addr *ret_addr = NULL;
 
     if (argc != 3) {
-        sprintf(err_buf, "Wrong number of args\n");
-        write(2, err_buf, strlen(err_buf));
-        exit(-1);
+        breaking_exec_err(0);
     }
 
     int t_port = (checked_p_range_input(argv[2], 0, 9999));
     if (t_port < 0) {
-        sprintf(err_buf, "Invalid PORT\n");
-        write(2, err_buf, strlen(err_buf));
-        exit(-1);
+        breaking_exec_err(1);
     }
 
     //Memorizzo nella struttura preposta, l'indirizzo e la porta del server a cui deve connettersi il client
@@ -48,9 +44,7 @@ int main(int argc, char *argv[]) {
 
     fd = open(argv[1], O_RDONLY);
     if (fd < 0) {
-        sprintf(err_buf, "ERR_OPEN_FILE\n\n");
-        write(2, err_buf, strlen(err_buf));
-        exit(-1);
+        breaking_exec_err(2);
     }
 
     //Creo la lista degli altri server e del loro stato.
@@ -80,28 +74,21 @@ int main(int argc, char *argv[]) {
     //socket in ascolto rispetto gli altri server.
     check = first_conn_interface();
     if(check!=1){
-        sprintf(err_buf, "ERR_INT_FIRST_CONN\n\n");
-        write(2, err_buf, strlen(err_buf));
-        exit(-1);
+        breaking_exec_err(3);
     }
 
     data_couples_list = create_list();
 
     socket_client_fd = create_socket(this_server_client_addr->port,this_server_client_addr->addr);
     if (socket_client_fd != 0) {
-        sprintf(err_buf, "ERR_CREATE_SOCKET\n");
-        write(2, err_buf, strlen(err_buf));
-        free(err_buf);
-        exit(-1);
+        breaking_exec_err(4);
     }
 
     client_fd = malloc(sizeof(int));
     while(check != 0) {
         *client_fd = accept(socket_client_fd, NULL, NULL);
         if (client_fd < 0) {
-            sprintf(err_buf,"\nBAD_CLIENT_CONNECTION\n\n");
-            write(2,err_buf, strlen(err_buf));
-            bzero(buf,sizeof(*buf));
+            no_breaking_exec_err(0);
         }else{
             check = comm_thread(client_fd);
         }
