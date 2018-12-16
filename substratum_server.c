@@ -1,7 +1,7 @@
 #include "substratum_server.h"
 
 int     dim_buf_err = 128;
-char    *buf_err;
+char    *err_buf;
 
 int errno;
 
@@ -81,7 +81,7 @@ server_addr *    check_dot_addr(char *input, int length){
     //valore di appoggio per il singolo carattere convertito ad int
     int unchecked_val = -1;
 
-    buf_err = malloc(dim_buf_err * sizeof(char));
+    err_buf = malloc(dim_buf_err * sizeof(char));
 
     //la stringa con l'indirizzo non può cominciare con un punto.
     if (input[0] == '.') {check = -1;}
@@ -118,10 +118,10 @@ server_addr *    check_dot_addr(char *input, int length){
     }
 
     if(check != 0){
-        sprintf(buf_err,"ERR_CONF_FILE_NOT_RIGHT_FORMAT");
-        write(2,buf_err,strlen(buf_err));
-        free(buf_err);
-        buf_err = NULL;
+        sprintf(err_buf,"ERR_CONF_FILE_NOT_RIGHT_FORMAT");
+        write(2,err_buf,strlen(err_buf));
+        free(err_buf);
+        err_buf = NULL;
         free(ret);
         return(NULL);
     }
@@ -145,7 +145,7 @@ int             create_socket(int port, char *ip) {
 
     struct sockaddr_in server_addr ;
 
-    buf_err = malloc(dim_buf_err * sizeof(char));
+    err_buf = malloc(dim_buf_err * sizeof(char));
 
     //riempio la struttura serverAddr che serve per identificare un servizio di rete(server)
     server_addr.sin_family = AF_INET;
@@ -155,9 +155,9 @@ int             create_socket(int port, char *ip) {
 
     //conversione dot a binary
     if (check_aton == 0) {
-        sprintf(buf_err, "ERR_CONV_ADDR_ATON");
-        write(2, buf_err, strlen(buf_err));
-        free(buf_err);
+        sprintf(err_buf, "ERR_CONV_ADDR_ATON");
+        write(2, err_buf, strlen(err_buf));
+        free(err_buf);
         exit(-1);
     }
 
@@ -165,26 +165,26 @@ int             create_socket(int port, char *ip) {
 
     sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        sprintf(buf_err, "ERR_SOCKET");
-        write(2, buf_err, strlen(buf_err));
-        free(buf_err);
+        sprintf(err_buf, "ERR_SOCKET");
+        write(2, err_buf, strlen(err_buf));
+        free(err_buf);
         exit(-1);
     }
 
     check = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
     if (check < 0) {
-        sprintf(buf_err, "ERR_BIND");
-        write(2, buf_err, strlen(buf_err));
-        free(buf_err);
+        sprintf(err_buf, "ERR_BIND");
+        write(2, err_buf, strlen(err_buf));
+        free(err_buf);
         exit(-1);
     }
 
 
     check = listen(sockfd, 200);
     if (check < 0) {
-        sprintf(buf_err, "ERR_LISTEN");
-        write(2, buf_err, strlen(buf_err));
-        free(buf_err);
+        sprintf(err_buf, "ERR_LISTEN");
+        write(2, err_buf, strlen(err_buf));
+        free(err_buf);
         exit(-1);
     }
 
@@ -261,55 +261,107 @@ int             check_conn_to_other_server(){
     }
 }
 
+int             first_conn_interface(){
+    int     dim_buf                         = 128;
+    char    *buf                            = malloc(dim_buf * sizeof(char));
+
+    int     ret                             = -1;
+    int     i                               = 0;
+
+    int     retry_conn_count                = 0;
+    int     conn                            = 1;
+
+    int     *end_list                       = malloc(sizeof(int));
+            *end_list                       = 0;
+
+    check_servers_node      *t                   = NULL;
+    node_list               *reading_point       = NULL;
+
+    while(retry_conn_count < 10 && conn == 1){
+        ++retry_conn_count;
+
+        sprintf(buf,"Tentativo %d di Connessione con gli altri server...\n",retry_conn_count);
+        write(0,buf,strlen(buf));
+        bzero(buf,sizeof(*buf));
+
+        i = 0;
+        reading_point = servers_check_list->top_list;
+        do {
+            /*CREAZIONE NUOVO THREAD : fa la connect verso uno dei server della lista*/
+            t = reading_point->value;
+            reading_point = reading_point->next;
+            thread_oth_server(t);
+            ++i;
+        }while(reading_point);
+
+        sleep(1);
+
+        conn = check_conn_to_other_server();
+
+        if(conn == 1) {
+            sleep(5);
+        }else if (conn == -1){
+            sprintf(err_buf, "ERR_NO_SUCH_SERVERS_LIST\n");
+            write(2, err_buf, strlen(err_buf));
+            free(err_buf);
+            exit(-1);
+        }
+    }
+
+    if(retry_conn_count<10) {
+        sprintf(buf, "\n\nConnessione Stabilita!\n\n");
+        write(0,buf,strlen(buf));
+        bzero(buf,sizeof(*buf));
+        ret = 1;
+    }else{
+        sprintf(buf, "\n\nImpossibile stabile connessione con gli altri server.\n");
+        write(0,buf,strlen(buf));
+        bzero(buf,sizeof(*buf));
+        exit(-1);
+    }
+
+    return (ret);
+}
+
 
 //Sincronizzazione con gli altri Server.
 
-void *          commission_comm_server(void *server_addr_in){
+void *          commission_comm_server_client(void *socket_fd){
     int         err_buf_dim     = 128;
     char        *err_buf        = malloc(err_buf_dim * sizeof(char));
     int         buf_dim         = 30;
     char        *buf            = malloc(buf_dim * sizeof(char));
 
-    int         sockfd          = -1;
+    int         client_fd          = *((int *)socket_fd);
     int         entryfd         = -1;
 
     ssize_t     n_byte          = 0;
 
-    server_addr  *server_addr       = server_addr_in;
-
-    //creazione del socket
-    sockfd=create_socket(server_addr->port, server_addr->addr);
-    if(sockfd<0){
-        sprintf(err_buf,"ERR_CREATE_SOCKET_SERVER_COMM\n");
-        write(2,err_buf,strlen(err_buf));
-        free(err_buf);
-        exit(-1);
-    }
-
-    while(1){
-        entryfd = accept(sockfd,NULL,NULL);
-        if(entryfd<0){
-            write(2,"\n\nerror_connect\n\n",17);
-            exit(-1);
-        }else{
-
-            n_byte = read(entryfd, buf, (size_t) buf_dim);
-            if (entryfd < 0) {
-                sprintf(err_buf, "ERR_READ_SERVER_COMM\nERRNO : %d\n", errno);
-                write(2, err_buf, strlen(err_buf));
-                free(err_buf);
-                exit(-1);
-            }
+    entryfd = accept(client_fd,NULL,NULL);
+    if(entryfd<0){
+        sprintf(err_buf,"\nBAD_CLIENT_CONNECTION\nERRNO : %d", errno);
+        write(2,err_buf, strlen(err_buf));
+        bzero(buf,sizeof(*buf));
+    }else {
+        n_byte = read(entryfd, buf, (size_t) buf_dim);
+        if (entryfd < 0) {
+            sprintf(err_buf, "ERR_READ_SERVER_COMM\nERRNO : %d\n", errno);
+            write(2, err_buf, strlen(err_buf));
+            free(err_buf);
+        }else {
+            //vanno aggiunti comandi
         }
-        //vanno aggiunti comandi
     }
+
+    return (NULL);
 }
 
-int             comm_thread(server_addr *addr_server){
+int comm_thread(int *socked_fd){
     int check = 0;
 
     pthread_t tid;
-    check = pthread_create(&tid,NULL, &commission_comm_server,addr_server);
+    check = pthread_create(&tid,NULL, &commission_comm_server_client,socked_fd);
 
     return(check);
 }
+

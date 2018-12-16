@@ -1,9 +1,10 @@
 #include "substratum_server.h"
 
 //Lista server per la comunicazione interna.
-server_addr             *this_server_addr       = NULL;
-
-//int     *data_from_server_list = NULL;  // per la search; quando viene eseguita, gli altri server devono comunicare la loro coppia di chiave x e che valore ha associato y.
+server_addr             *this_server_inner_addr         = NULL;
+server_addr             *this_server_client_addr        = NULL;
+int                     socket_client_fd                      = -1;
+int                     *client_fd;
 
 //LISTA COPPIE.
 head_list *data_couples_list =  NULL;
@@ -32,11 +33,18 @@ int main(int argc, char *argv[]) {
         write(2, err_buf, strlen(err_buf));
         exit(-1);
     }
-    if ((checked_p_range_input(argv[2], 0, 9999) < 0)) {
+
+    int t_port = (checked_p_range_input(argv[2], 0, 9999));
+    if (t_port < 0) {
         sprintf(err_buf, "Invalid PORT\n");
         write(2, err_buf, strlen(err_buf));
         exit(-1);
     }
+
+    //Memorizzo nella struttura preposta, l'indirizzo e la porta del server a cui deve connettersi il client
+    this_server_client_addr             = malloc(sizeof(server_addr));
+    this_server_client_addr->addr       = "127.0.0.1";
+    this_server_client_addr->port       = t_port;
 
     fd = open(argv[1], O_RDONLY);
     if (fd < 0) {
@@ -62,7 +70,7 @@ int main(int argc, char *argv[]) {
                 temp = create_new_node(ret_addr,1,j);
                 servers_check_list = insert_node(servers_check_list, temp);
             } else {
-                this_server_addr = ret_addr;
+                this_server_inner_addr = ret_addr;
                 ++j;
             }
         }
@@ -70,66 +78,32 @@ int main(int argc, char *argv[]) {
     }
 
     //socket in ascolto rispetto gli altri server.
-    check = comm_thread(this_server_addr);
-    if (check != 0) {
-        sprintf(err_buf, "ERR_CREATE_THREAD\n");
+    check = first_conn_interface();
+    if(check!=1){
+        sprintf(err_buf, "ERR_INT_FIRST_CONN\n\n");
+        write(2, err_buf, strlen(err_buf));
+        exit(-1);
+    }
+
+    data_couples_list = create_list();
+
+    socket_client_fd = create_socket(this_server_client_addr->port,this_server_client_addr->addr);
+    if (socket_client_fd != 0) {
+        sprintf(err_buf, "ERR_CREATE_SOCKET\n");
         write(2, err_buf, strlen(err_buf));
         free(err_buf);
         exit(-1);
     }
 
-    int retry_conn_count                    = 0;
-    int conn                                = 1;
-
-    int *end_list                           = malloc(sizeof(int));
-    *end_list                               = 0;
-
-    check_servers_node *t                   = NULL;
-    node_list          *reading_point       = NULL;
-    while(retry_conn_count < 10 && conn == 1){
-        ++retry_conn_count;
-
-        sprintf(buf,"Tentativo %d di Connessione con gli altri server...\n",retry_conn_count);
-        write(0,buf,strlen(buf));
-        bzero(buf,sizeof(*buf));
-
-        i = 0;
-        reading_point = servers_check_list->top_list;
-        do {
-            /*CREAZIONE NUOVO THREAD : fa la connect verso uno dei server della lista*/
-            t = reading_point->value;
-            reading_point = reading_point->next;
-            thread_oth_server(t);
-            ++i;
-        }while(reading_point);
-
-        sleep(1);
-
-        conn = check_conn_to_other_server();
-
-        if(conn == 1) {
-            sleep(5);
-        }else if (conn == -1){
-            sprintf(err_buf, "ERR_NO_SUCH_SERVERS_LIST\n");
-            write(2, err_buf, strlen(err_buf));
-            free(err_buf);
-            exit(-1);
+    client_fd = malloc(sizeof(int));
+    while(check != 0) {
+        *client_fd = accept(socket_client_fd, NULL, NULL);
+        if (client_fd < 0) {
+            sprintf(err_buf,"\nBAD_CLIENT_CONNECTION\n\n");
+            write(2,err_buf, strlen(err_buf));
+            bzero(buf,sizeof(*buf));
+        }else{
+            check = comm_thread(client_fd);
         }
     }
-
-    if(retry_conn_count<10) {
-        sprintf(buf, "\n\nConnessione Stabilita!\n\n");
-        write(0,buf,strlen(buf));
-        bzero(buf,sizeof(*buf));
-    }else{
-        sprintf(buf, "\n\nImpossibile stabile connessione con gli altri server.\n");
-        write(0,buf,strlen(buf));
-        bzero(buf,sizeof(*buf));
-        exit(-1);
-    }
-    data_couples_list = create_list();
-
-    while(1){;}  // Da rimuovere
-    /* Gestione threads per i client
-     * Gestione comandi client */
 }

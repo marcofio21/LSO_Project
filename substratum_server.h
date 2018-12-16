@@ -31,9 +31,15 @@ int                 checked_p_range_input               (char *input_string, int
 //Controlla che il formato delle stringhe date in input, rispetti il formato richiesto dalle specifiche per il file di configurazione.
 server_addr *       check_dot_addr                      (char *input, int length);
 
-//crea un server e si mette in ascolto di 1 o piu client
-int                 comm_thread                         (server_addr *addr_server);
 
+
+//interfaccia che integra tutta la logica per il controllo dello stato degli altri server. restituirà 1 se sono online, oppure farà la EXIT direttamente.
+int                 first_conn_interface();
+
+int                 create_socket(int port, char *ip);
+
+//crea un server e si mette in ascolto
+int                 comm_thread(int *socked_fd);
 
 //Funzione richiamata dal Thread che si occupa del controllo della disponibilità degli altri server.
 void *              thread_oth_server_job(void *server_node);
