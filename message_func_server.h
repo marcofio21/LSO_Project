@@ -17,4 +17,6 @@ void            ok_conn();
 void            retry_conn(int attempt_number);
 void            bad_conn();
 
+void            close_err_buf();
+
 #endif //LSO_PROJECT_SIGNAL_SERVER_H

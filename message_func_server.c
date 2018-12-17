@@ -24,12 +24,24 @@ char *pool_err[] = {
         "ERR_READ_SERVER_COMM",
         NULL
 };
+
+void            init_buf(){
+    buf = malloc(size_buf * sizeof(char));
+}
+
+void            close_err_buf(){
+    free(buf);
+    buf = NULL;
+}
+
 void            no_breaking_exec_err        (int code){
+    if(!buf){init_buf();}
     sprintf(buf,"%s\n\n",pool_err[code]);
     write(2,buf, strlen(buf));
     bzero(buf,sizeof(*buf));
 }
 void            breaking_exec_err           (int code){
+    if(!buf){init_buf();}
     sprintf(buf, "%s\n", pool_be_err[code]);
     write(2, buf, strlen(buf));
     free(buf);
@@ -37,24 +49,28 @@ void            breaking_exec_err           (int code){
 }
 
 void            print_errno                 (int errno_code){
+    if(!buf){init_buf();}
     sprintf(buf,"ERRNO : %d\n", errno_code);
     write(2,buf, strlen(buf));
     bzero(buf,sizeof(*buf));
 }
 
 void            ok_conn(){
+    if(!buf){init_buf();}
     sprintf(buf, "\n\nConnessione Stabilita!\n\n");
     write(0,buf,strlen(buf));
     bzero(buf,sizeof(*buf));
 }
 
 void            retry_conn(int attempt_number){
+    if(!buf){init_buf();}
     sprintf(buf,"Tentativo %d di Connessione con gli altri server...\n",attempt_number);
     write(0,buf,strlen(buf));
     bzero(buf,sizeof(*buf));
 }
 
 void            bad_conn(){
+    if(!buf){init_buf();}
     sprintf(buf, "\n\nImpossibile stabile connessione con gli altri server.\n");
     write(0,buf,strlen(buf));
     bzero(buf,sizeof(*buf));

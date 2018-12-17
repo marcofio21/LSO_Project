@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 
     //Memorizzo nella struttura preposta, l'indirizzo e la porta del server a cui deve connettersi il client
     this_server_client_addr             = malloc(sizeof(server_addr));
-    this_server_client_addr->addr       = "127.0.0.1";
+    //manca indirizzo, viene aggiunto dopo.
     this_server_client_addr->port       = t_port;
 
     fd = open(argv[1], O_RDONLY);
@@ -70,6 +70,9 @@ int main(int argc, char *argv[]) {
         }
         ++i;
     }
+
+    //ottenuto l'indirizzo a cui connettersi con gli altri server, questo sarà in comune anche con il client
+    this_server_client_addr->addr       = this_server_inner_addr->addr;
 
     //socket in ascolto rispetto gli altri server.
     check = first_conn_interface();

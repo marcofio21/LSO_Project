@@ -341,3 +341,49 @@ int comm_thread(int *socked_fd){
     return(check);
 }
 
+server_addr *       create_list_other_server(char *conf_file_link){
+    int size_buf                    = 128;
+    char *buf                       = malloc(size_buf * sizeof(char));
+
+    int i                           = 0;
+    int j                           = 0;
+    int fd                          = -1;
+
+    int num_byte                    = -1;
+    int offset                      = 0;
+
+    char *readed_addr = malloc(size_buf * sizeof(char));
+    server_addr *temp_addr_node     = NULL;
+    server_addr *ret                = NULL;
+
+    fd = open(conf_file_link, O_RDONLY);
+    if (fd < 0) {
+        breaking_exec_err(2);
+    }
+
+    //Creo la lista degli altri server e del loro stato.
+    servers_check_list = create_list();
+    check_servers_node *temp    = NULL;
+
+    while (read(fd, buf + i, 1) == 1) {
+        if (buf[i] == '\n' || buf[i] == 0x0) {
+            num_byte = i - offset;
+            strncpy(readed_addr, buf + offset, (size_t) num_byte);
+            temp_addr_node = check_dot_addr(readed_addr, num_byte);
+
+            if (!temp_addr_node) { exit(-1); }
+
+            offset = i + 1;
+            if (j >= 1) {
+                temp = create_new_node(temp_addr_node,1,j);
+                servers_check_list = insert_node(servers_check_list, temp);
+            } else {
+                ret = temp_addr_node;
+                ++j;
+            }
+        }
+        ++i;
+    }
+
+    return (ret);
+}

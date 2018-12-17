@@ -50,4 +50,8 @@ pthread_t           thread_oth_server(check_servers_node *server_to_check);
 
 int                 check_conn_to_other_server();
 
+//Crea la lista degli altri server a cui connettersi e controllare lo stato
+
+server_addr *       create_list_other_server(char *conf_file_link);
+
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H
