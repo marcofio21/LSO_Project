@@ -1,4 +1,4 @@
-#include <malloc.h>
+
 #include "message_func_server.h"
 
 int size_buf = 128;
@@ -57,21 +57,21 @@ void            print_errno                 (int errno_code){
 
 void            ok_conn(){
     if(!buf){init_buf();}
-    sprintf(buf, "\n\nConnessione Stabilita!\n\n");
+    sprintf(buf, "\n\nEstablished Connection!\n\n");
     write(0,buf,strlen(buf));
     bzero(buf,sizeof(*buf));
 }
 
 void            retry_conn(int attempt_number){
     if(!buf){init_buf();}
-    sprintf(buf,"Tentativo %d di Connessione con gli altri server...\n",attempt_number);
+    sprintf(buf,"Attempt %d of Connecting with other servers ...\n",attempt_number);
     write(0,buf,strlen(buf));
     bzero(buf,sizeof(*buf));
 }
 
 void            bad_conn(){
     if(!buf){init_buf();}
-    sprintf(buf, "\n\nImpossibile stabile connessione con gli altri server.\n");
+    sprintf(buf, "\n\nUnable to stable connection with other servers.\n");
     write(0,buf,strlen(buf));
     bzero(buf,sizeof(*buf));
 }

@@ -1,7 +1,6 @@
 #include "substratum_server.h"
 
-int     dim_buf_err = 128;
-char    *err_buf;
+
 
 int errno;
 
@@ -73,6 +72,7 @@ server_addr *    check_dot_addr(char *input, int length){
     int     i               = 0;
     int     port_i          = 0;
 
+
     server_addr *ret         = NULL;
     char *addr              = malloc(15 * sizeof(char));
     bzero(addr,sizeof(*addr));
@@ -80,8 +80,6 @@ server_addr *    check_dot_addr(char *input, int length){
 
     //valore di appoggio per il singolo carattere convertito ad int
     int unchecked_val = -1;
-
-    err_buf = malloc(dim_buf_err * sizeof(char));
 
     //la stringa con l'indirizzo non può cominciare con un punto.
     if (input[0] == '.') {check = -1;}
@@ -139,8 +137,6 @@ int             create_socket(int port, char *ip) {
     int check = -1;
 
     struct sockaddr_in server_addr ;
-
-    err_buf = malloc(dim_buf_err * sizeof(char));
 
     //riempio la struttura serverAddr che serve per identificare un servizio di rete(server)
     server_addr.sin_family = AF_INET;
@@ -286,8 +282,6 @@ int             first_conn_interface(){
 //Sincronizzazione con gli altri Server.
 
 void *          commission_comm_server_client(void *socket_fd){
-    int         err_buf_dim     = 128;
-    char        *err_buf        = malloc(err_buf_dim * sizeof(char));
     int         buf_dim         = 30;
     char        *buf            = malloc(buf_dim * sizeof(char));
 
@@ -303,10 +297,6 @@ void *          commission_comm_server_client(void *socket_fd){
     }else {
         n_byte = read(entryfd, buf, (size_t) buf_dim);
         if (entryfd < 0) {
-            /*sprintf(err_buf, "ERR_READ_SERVER_COMM\nERRNO : %d\n", errno);
-            write(2, err_buf, strlen(err_buf));
-            free(err_buf);*/
-
             print_errno(errno);
             no_breaking_exec_err(2);
         }else {

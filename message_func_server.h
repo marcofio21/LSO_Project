@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
+#include <malloc.h>
 
 void            no_breaking_exec_err        (int code);
 void            breaking_exec_err           (int code);
