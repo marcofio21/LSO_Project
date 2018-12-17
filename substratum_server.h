@@ -42,12 +42,10 @@ int                 create_socket(int port, char *ip);
 //crea un server e si mette in ascolto
 int                 comm_thread(int *socked_fd);
 
-//Funzione richiamata dal Thread che si occupa del controllo della disponibilità degli altri server.
-void *              thread_oth_server_job(void *server_node);
+//Funzione che si occupa del controllo della disponibilità di UNO degli altri server.
+void *              test_server_conn(check_servers_node *server_node);
 
-//Funzione che controlla lo stato della connessione con un server.
-pthread_t           thread_oth_server(check_servers_node *server_to_check);
-
+//Scorre la lista e controlla lo stato dei server, se ne trova uno offline, ritorna -1.
 int                 check_conn_to_other_server();
 
 //Crea la lista degli altri server a cui connettersi e controllare lo stato

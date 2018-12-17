@@ -178,41 +178,28 @@ int             create_socket(int port, char *ip) {
 
 //Controllo Connessione con altri server
 
-void *          thread_oth_server_job(void *server_node){
+void *          test_server_conn(check_servers_node *server_node){
     int                 connected                       = -1;
     int                 fd_socket                       = -1;
 
-    check_servers_node    *node_to_elab                 = server_node;
     struct sockaddr_in    *test_conn_serv               = malloc(sizeof(struct sockaddr_in));
 
     test_conn_serv->sin_family = AF_INET;
-    test_conn_serv->sin_port = htons((uint16_t)node_to_elab->server->port);
-    inet_aton(node_to_elab->server->addr,&test_conn_serv->sin_addr);
+    test_conn_serv->sin_port = htons((uint16_t)server_node->server->port);
+    inet_aton(server_node->server->addr,&test_conn_serv->sin_addr);
 
     fd_socket = socket(PF_INET,SOCK_STREAM,0);
 
     connected = connect(fd_socket, (struct sockaddr *)test_conn_serv, sizeof(*test_conn_serv));
 
     if(connected == -1) {
-        node_to_elab->status = 1;
+        server_node->status = 1;
     }else {
-        node_to_elab->status = 0;
+        server_node->status = 0;
         close(fd_socket);
     }
 
     return(NULL);
-}
-
-pthread_t       thread_oth_server(check_servers_node *server_to_check){
-    int check = 0;
-
-    pthread_t tid_check_conn_thread;
-
-    check = pthread_create(&tid_check_conn_thread,NULL, &thread_oth_server_job,server_to_check);
-    if(check<0){exit(-1);}
-
-
-    return (tid_check_conn_thread);
 }
 
 int             check_conn_to_other_server(){
@@ -257,7 +244,6 @@ int             first_conn_interface(){
     int     *end_list                       = malloc(sizeof(int));
             *end_list                       = 0;
 
-    check_servers_node      *t                   = NULL;
     node_list               *reading_point       = NULL;
 
     while(retry_conn_count < 10 && conn == 1){
@@ -269,9 +255,8 @@ int             first_conn_interface(){
         reading_point = servers_check_list->top_list;
         do {
             /*CREAZIONE NUOVO THREAD : fa la connect verso uno dei server della lista*/
-            t = reading_point->value;
+            test_server_conn(reading_point->value);
             reading_point = reading_point->next;
-            thread_oth_server(t);
             ++i;
         }while(reading_point);
 
@@ -332,7 +317,7 @@ void *          commission_comm_server_client(void *socket_fd){
     return (NULL);
 }
 
-int comm_thread(int *socked_fd){
+int             comm_thread(int *socked_fd){
     int check = 0;
 
     pthread_t tid;
@@ -341,7 +326,7 @@ int comm_thread(int *socked_fd){
     return(check);
 }
 
-server_addr *       create_list_other_server(char *conf_file_link){
+server_addr *   create_list_other_server(char *conf_file_link){
     int size_buf                    = 128;
     char *buf                       = malloc(size_buf * sizeof(char));
 
@@ -357,9 +342,7 @@ server_addr *       create_list_other_server(char *conf_file_link){
     server_addr *ret                = NULL;
 
     fd = open(conf_file_link, O_RDONLY);
-    if (fd < 0) {
-        breaking_exec_err(2);
-    }
+    if (fd < 0) {breaking_exec_err(2);}
 
     //Creo la lista degli altri server e del loro stato.
     servers_check_list = create_list();
