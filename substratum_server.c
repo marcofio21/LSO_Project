@@ -250,7 +250,7 @@ int             first_conn_interface(){
         i = 0;
         reading_point = servers_check_list->top_list;
         do {
-            /*CREAZIONE NUOVO THREAD : fa la connect verso uno dei server della lista*/
+            /*Si scorre l'intera lista dei server e ne controlla la disponibilità*/
             test_server_conn(reading_point->value);
             reading_point = reading_point->next;
             ++i;
@@ -278,40 +278,12 @@ int             first_conn_interface(){
     return (ret);
 }
 
-
-//Sincronizzazione con gli altri Server.
-
-void *          commission_comm_server_client(void *socket_fd){
-    int         buf_dim         = 30;
-    char        *buf            = malloc(buf_dim * sizeof(char));
-
-    int         client_fd          = *((int *)socket_fd);
-    int         entryfd         = -1;
-
-    ssize_t     n_byte          = 0;
-
-    entryfd = accept(client_fd,NULL,NULL);
-    if(entryfd<0){
-        no_breaking_exec_err(0);
-        print_errno(errno);
-    }else {
-        n_byte = read(entryfd, buf, (size_t) buf_dim);
-        if (entryfd < 0) {
-            print_errno(errno);
-            no_breaking_exec_err(2);
-        }else {
-            //vanno aggiunti comandi
-        }
-    }
-
-    return (NULL);
-}
-
-int             comm_thread(int *socked_fd){
+//Interfaccia che permette di creare un thread e di assegnargli il lavoro "job" che si vuole.
+int             comm_thread(FJOBTHREAD *fjob_t, void *par) {
     int check = 0;
 
     pthread_t tid;
-    check = pthread_create(&tid,NULL, &commission_comm_server_client,socked_fd);
+    check = pthread_create(&tid,NULL,fjob_t,par);
 
     return(check);
 }

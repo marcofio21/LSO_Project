@@ -20,6 +20,7 @@
 #include "Lists/list_addr/list_addr_functions.h"
 #include "message_func_server.h"
 
+typedef void *          (FJOBTHREAD)(void *fjob);
 
 head_list       *servers_check_list;
 
@@ -40,7 +41,7 @@ int                 first_conn_interface();
 int                 create_socket(int port, char *ip);
 
 //crea un server e si mette in ascolto
-int                 comm_thread(int *socked_fd);
+int comm_thread(FJOBTHREAD *fjob_t, void *par);
 
 //Funzione che si occupa del controllo della disponibilità di UNO degli altri server.
 void *              test_server_conn(check_servers_node *server_node);

@@ -22,6 +22,7 @@ char *pool_err[] = {
         "BAD_CLIENT_CONNECTION",
         "ERR_CONF_FILE_NOT_RIGHT_FORMAT",
         "ERR_READ_SERVER_COMM",
+        "BAD_CONNECTION_WITH_A_CLIENT",
         NULL
 };
 
