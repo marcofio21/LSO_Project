@@ -17,12 +17,17 @@
 #include <pthread.h>
 
 #include "Lists/list_library.h"
-#include "Lists/list_addr/list_addr_functions.h"
+#include "Lists/addr_list/list_addr_functions.h"
+#include "Lists/data_list/couple_list.h"
 #include "message_func_server.h"
 
 typedef void *          (FJOBTHREAD)(void *fjob);
 
+//LISTA SERVER
 head_list       *servers_check_list;
+
+//LISTA COPPIE.
+head_list       *data_couples_list;
 
 //Calcola il valore di a elevato al valore intero di exp.
 int                 pow_int                             (int a, int exp);
@@ -40,9 +45,6 @@ int                 first_conn_interface();
 
 int                 create_socket(int port, char *ip);
 
-//crea un server e si mette in ascolto
-int comm_thread(FJOBTHREAD *fjob_t, void *par);
-
 //Funzione che si occupa del controllo della disponibilità di UNO degli altri server.
 void *              test_server_conn(check_servers_node *server_node);
 
@@ -52,5 +54,13 @@ int                 check_conn_to_other_server();
 //Crea la lista degli altri server a cui connettersi e controllare lo stato
 
 server_addr *       create_list_other_server(char *conf_file_link);
+
+
+
+//crea un thread che si occupa del socket dato in ingresso.
+int                 comm_thread(FJOBTHREAD *fjob_t, void *socket);
+
+//THREAD JOBS
+void *              store(void *socket_p);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H

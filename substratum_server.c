@@ -228,9 +228,6 @@ int             check_conn_to_other_server(){
 }
 
 int             first_conn_interface(){
-    int     dim_buf                         = 128;
-    char    *buf                            = malloc(dim_buf * sizeof(char));
-
     int     ret                             = -1;
     int     i                               = 0;
 
@@ -245,6 +242,7 @@ int             first_conn_interface(){
     while(retry_conn_count < 10 && conn == 1){
         ++retry_conn_count;
 
+
         retry_conn(retry_conn_count);
 
         i = 0;
@@ -255,8 +253,6 @@ int             first_conn_interface(){
             reading_point = reading_point->next;
             ++i;
         }while(reading_point);
-
-        sleep(1);
 
         conn = check_conn_to_other_server();
 
@@ -331,4 +327,77 @@ server_addr *   create_list_other_server(char *conf_file_link){
     }
 
     return (ret);
+}
+
+char* receive_all(int sockfd){
+    ssize_t  byte           = -1;
+    int      i              = 0;
+
+    int    dim_str          = 128;
+    char   *str;
+
+    str                     = malloc(dim_str*sizeof(char));
+
+    //il while legge finché non viene restituito un valore minore del buffer,
+    //cioè quando si è letto l'ultima parte della stringa, e quindi meno di 64
+    //caratteri, oppure è 0.
+    //Continua, se si è letto tutti i caratteri al suo interno e potrebbero essercene altri.
+    while( (byte = (read(sockfd,str + i,64))) < 64){
+        i += 64;
+        if(i > 128){str = NULL;}
+    }
+    if(byte<0){
+        breaking_exec_err(6); //errore read
+        return (NULL);
+    }
+
+    return (str);
+}
+
+
+//Funzioni JOB Thread
+
+void *          store(void *socket_p){
+    int     socket_fd           = *((int *)socket_p);
+    int     *node_ret           = NULL;
+    char    *key                = NULL;
+    char    *value              = NULL;
+
+    if(socket_p) {
+        node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
+
+        write(socket_fd, "k", 1);
+        key = receive_all(socket_fd); //leggo la chiave.
+        if (!key) {
+            write(socket_fd, "!", 1);
+            return (NULL);
+        }
+
+        write(socket_fd, "k", 1);
+
+        value = receive_all(socket_fd); //
+        if (!value) {
+            write(socket_fd, "!", 1);
+            return (NULL);
+        }
+
+        //cerco nella lista locale se c'è la chiave inserita e memorizzata in input.
+        if (data_couples_list) {
+            void *node      = create_new_couples_node(key,value);
+            node_ret        = search_node(data_couples_list,node,&comp_couples);
+
+            //PThread con l'inoltro agli altri server, quindi : comm_server(&"funzione manda messaggio altri server")
+            //Aspetto segnale che tutti l'abbiano memorizzato "???"
+            //Cosa faccio se uno non lo memorizza, magari perché andato offline "???"
+
+            if(node_ret){
+                write(socket_fd,"found",5);
+            }else{
+                data_couples_list = insert_node(data_couples_list,node);
+                write(socket_fd,"k",1);
+            }
+        }
+
+    }
+    return (NULL);
 }

@@ -4,10 +4,7 @@
 server_addr             *this_server_inner_addr         = NULL;
 server_addr             *this_server_client_addr        = NULL;
 int                     socket_client_fd                = -1;
-int                     client_fd;
-
-//LISTA COPPIE.
-head_list *data_couples_list =  NULL;
+int                     *client_fd;
 
 int main(int argc, char *argv[]) {
     int         check   = 0;
@@ -43,13 +40,13 @@ int main(int argc, char *argv[]) {
     socket_client_fd = create_socket(this_server_client_addr->port,this_server_client_addr->addr);
     if (socket_client_fd < 0) {breaking_exec_err(4);}
 
-
+    client_fd = malloc(sizeof(int));
     while(check != 0) {
-        client_fd = accept(socket_client_fd, NULL, NULL);
+        *client_fd = accept(socket_client_fd, NULL, NULL);
         if (client_fd < 0) {
             no_breaking_exec_err(0);
         }else{
-            readed = read(client_fd,buf,strlen(buf));
+            readed = read(*client_fd,buf,strlen(buf));
             if(readed > 1){
                 /*comm_thread(thread che si occupa di rifutare la connessione);*/
             }else if(readed < -1){
@@ -57,7 +54,7 @@ int main(int argc, char *argv[]) {
             }else{
                 if(buf[0] == 's'){
                     /*comando STORE*/
-                    /*comm_thread(funzione per lo store);*/
+                    check = comm_thread(&store,&client_fd);
                 }else if(buf[0] == 'c'){
                     /*comand CORRUPT*/
                     /*comm_thread(funzione per corrompere il thread);*/
