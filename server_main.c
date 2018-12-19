@@ -8,10 +8,11 @@ int                     *client_fd;
 
 int main(int argc, char *argv[]) {
     int         check   = 0;
-    int         dim_buf = 128;
+    int         dim_buf = 1;
     ssize_t     readed  = 0;
 
     char        *buf    = malloc(dim_buf * sizeof(char));
+    int         *err_t  = NULL;
 
     this_server_inner_addr      = malloc(sizeof(server_addr));
     this_server_client_addr     = malloc(sizeof(server_addr));
@@ -47,14 +48,12 @@ int main(int argc, char *argv[]) {
             no_breaking_exec_err(0);
         }else{
             readed = read(*client_fd,buf,strlen(buf));
-            if(readed > 1){
-                /*comm_thread(thread che si occupa di rifutare la connessione);*/
-            }else if(readed < -1){
+            if(readed < 0){
                 no_breaking_exec_err(3);
             }else{
                 if(buf[0] == 's'){
                     /*comando STORE*/
-                    check = comm_thread(&store,&client_fd);
+                    comm_thread(&store, &client_fd);
                 }else if(buf[0] == 'c'){
                     /*comand CORRUPT*/
                     /*comm_thread(funzione per corrompere il thread);*/

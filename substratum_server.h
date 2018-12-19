@@ -58,9 +58,10 @@ server_addr *       create_list_other_server(char *conf_file_link);
 
 
 //crea un thread che si occupa del socket dato in ingresso.
-int                 comm_thread(FJOBTHREAD *fjob_t, void *socket);
+pthread_t comm_thread(FJOBTHREAD *fjob_t, void *par);
 
 //THREAD JOBS
-void *              store(void *socket_p);
+void *              store           (void *socket_p);
+void *              check_store     (void *socker_p);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H

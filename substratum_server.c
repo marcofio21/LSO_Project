@@ -1,8 +1,14 @@
 #include "substratum_server.h"
 
-
-
 int errno;
+
+typedef struct comm_temp_struct temp_s;
+
+struct comm_temp_struct{
+    server_addr     *addr;
+    int             socket_fd;
+    mem_data        *couple;
+};
 
 //Funzioni di Controllo input
 
@@ -274,16 +280,6 @@ int             first_conn_interface(){
     return (ret);
 }
 
-//Interfaccia che permette di creare un thread e di assegnargli il lavoro "job" che si vuole.
-int             comm_thread(FJOBTHREAD *fjob_t, void *par) {
-    int check = 0;
-
-    pthread_t tid;
-    check = pthread_create(&tid,NULL,fjob_t,par);
-
-    return(check);
-}
-
 server_addr *   create_list_other_server(char *conf_file_link){
     int size_buf                    = 128;
     char *buf                       = malloc(size_buf * sizeof(char));
@@ -329,27 +325,30 @@ server_addr *   create_list_other_server(char *conf_file_link){
     return (ret);
 }
 
+//Interfaccia che permette di creare un thread e di assegnargli il lavoro "job" che si vuole.
+pthread_t comm_thread(FJOBTHREAD *fjob_t, void *par) {
+    pthread_t tid;
+    pthread_create(&tid,NULL,fjob_t,par);
+
+    return(tid);
+}
+
 char* receive_all(int sockfd){
     ssize_t  byte           = -1;
     int      i              = 0;
 
     int    dim_str          = 128;
-    char   *str;
-
-    str                     = malloc(dim_str*sizeof(char));
+    char   *str             = malloc(dim_str*sizeof(char));
 
     //il while legge finché non viene restituito un valore minore del buffer,
     //cioè quando si è letto l'ultima parte della stringa, e quindi meno di 64
     //caratteri, oppure è 0.
     //Continua, se si è letto tutti i caratteri al suo interno e potrebbero essercene altri.
-    while( (byte = (read(sockfd,str + i,64))) < 64){
+    while( (byte = (read(sockfd,str + i,64))) == 64){
         i += 64;
-        if(i > 128){str = NULL;}
+        if(i > 128){return(NULL);}
     }
-    if(byte<0){
-        breaking_exec_err(6); //errore read
-        return (NULL);
-    }
+    if(byte<0){return (NULL);}
 
     return (str);
 }
@@ -358,10 +357,12 @@ char* receive_all(int sockfd){
 //Funzioni JOB Thread
 
 void *          store(void *socket_p){
-    int     socket_fd           = *((int *)socket_p);
-    int     *node_ret           = NULL;
-    char    *key                = NULL;
-    char    *value              = NULL;
+    int             socket_fd           = *((int *)socket_p);
+    mem_data        *node_ret           = NULL;
+    char            *key                = NULL;
+    char            *value              = NULL;
+
+    node_list       *reading_point      = NULL;
 
     if(socket_p) {
         node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
@@ -369,15 +370,15 @@ void *          store(void *socket_p){
         write(socket_fd, "k", 1);
         key = receive_all(socket_fd); //leggo la chiave.
         if (!key) {
-            write(socket_fd, "!", 1);
+            write(socket_fd, "!sk", 3);
             return (NULL);
         }
 
         write(socket_fd, "k", 1);
 
-        value = receive_all(socket_fd); //
+        value = receive_all(socket_fd); //leggo la value
         if (!value) {
-            write(socket_fd, "!", 1);
+            write(socket_fd, "!vl", 3);
             return (NULL);
         }
 
@@ -386,13 +387,38 @@ void *          store(void *socket_p){
             void *node      = create_new_couples_node(key,value);
             node_ret        = search_node(data_couples_list,node,&comp_couples);
 
-            //PThread con l'inoltro agli altri server, quindi : comm_server(&"funzione manda messaggio altri server")
+
             //Aspetto segnale che tutti l'abbiano memorizzato "???"
             //Cosa faccio se uno non lo memorizza, magari perché andato offline "???"
 
             if(node_ret){
                 write(socket_fd,"found",5);
             }else{
+                temp_s *t       = malloc(sizeof(temp_s));
+                reading_point   = servers_check_list->top_list;
+
+                t->couple       = malloc(sizeof(mem_data));
+
+                t->socket_fd        = socket_fd;
+                t->couple->key      = key;
+                t->couple->value    = value;
+                t->addr             = ((check_servers_node *)(reading_point->value))->server;
+                //eventuale controllo su ((...))->status
+
+                //preparo array tid per controllo del risultato
+                pthread_t tid_arr[servers_check_list->num_node];
+                int i = 0;
+
+                while(reading_point){
+                    tid_arr[i] = comm_thread(&check_store,t);
+                    reading_point = reading_point->next;
+                    ++i;
+                }
+
+                for(int j=0; j < i; j++){
+                    /*pthread_join(tid_arr[j],);*/
+                }
+
                 data_couples_list = insert_node(data_couples_list,node);
                 write(socket_fd,"k",1);
             }
