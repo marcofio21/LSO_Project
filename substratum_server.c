@@ -326,14 +326,14 @@ server_addr *   create_list_other_server(char *conf_file_link){
 }
 
 //Interfaccia che permette di creare un thread e di assegnargli il lavoro "job" che si vuole.
-pthread_t comm_thread(FJOBTHREAD *fjob_t, void *par) {
+pthread_t       comm_thread(FJOBTHREAD *fjob_t, void *par) {
     pthread_t tid;
     pthread_create(&tid,NULL,fjob_t,par);
 
     return(tid);
 }
 
-char* receive_all(int sockfd){
+char*           receive_all(int sockfd){
     ssize_t  byte           = -1;
     int      i              = 0;
 
@@ -561,7 +561,7 @@ void *          inner_comm_check(void *sock_server){
                 //chiudo la sezione critica
                 return(NULL);
             }
-            if(buf && (strcmp(buf,"K")) == 0 ){
+            if((strcmp(buf,"K")) == 0 ){
                 data_couples_list = insert_node(data_couples_list,temp_node);
                 //chiudo la sezione critica
             }

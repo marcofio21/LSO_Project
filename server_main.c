@@ -4,6 +4,7 @@
 server_addr             *this_server_inner_addr         = NULL;
 server_addr             *this_server_client_addr        = NULL;
 int                     socket_client_fd                = -1;
+int                     inner_socket_fd                 = -1;
 int                     *client_fd;
 
 int main(int argc, char *argv[]) {
@@ -29,8 +30,8 @@ int main(int argc, char *argv[]) {
     //ottenuto l'indirizzo a cui connettersi con gli altri server, questo sarà in comune anche con il client
     this_server_client_addr->addr       = this_server_inner_addr->addr;
 
-    socket_client_fd = create_socket(this_server_inner_addr->port,this_server_inner_addr->addr);
-    if (socket_client_fd < 0) {breaking_exec_err(4);}
+    inner_socket_fd = create_socket(this_server_inner_addr->port,this_server_inner_addr->addr);
+    if (inner_socket_fd < 0) {breaking_exec_err(4);}
 
     //socket in ascolto rispetto gli altri server.
     check = first_conn_interface();
