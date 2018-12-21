@@ -5,8 +5,8 @@ int errno;
 typedef struct comm_temp_struct temp_s;
 
 struct comm_temp_struct{
-    server_addr     *addr;
-    int             socket_fd;
+    int             serv_fd;
+    server_addr     *addr_serv;
     mem_data        *couple;
 };
 
@@ -362,6 +362,9 @@ void *          store(void *socket_p){
     char            *key                = NULL;
     char            *value              = NULL;
 
+    int             *check_end_thr      = NULL;
+    int             f_err               = 0;
+
     node_list       *reading_point      = NULL;
 
     if(socket_p) {
@@ -394,36 +397,175 @@ void *          store(void *socket_p){
             if(node_ret){
                 write(socket_fd,"found",5);
             }else{
-                temp_s *t       = malloc(sizeof(temp_s));
-                reading_point   = servers_check_list->top_list;
+                if(servers_check_list && servers_check_list->top_list) {
 
-                t->couple       = malloc(sizeof(mem_data));
+                    //creo array per i TID dei thread per la comunicazione con gli altri server
+                    pthread_t   arr[servers_check_list->num_node];
+                    temp_s      *arr_t[servers_check_list->num_node];
 
-                t->socket_fd        = socket_fd;
-                t->couple->key      = key;
-                t->couple->value    = value;
-                t->addr             = ((check_servers_node *)(reading_point->value))->server;
-                //eventuale controllo su ((...))->status
+                    int i = 0;
+                    int comm_other_server_socketfd = 0;
+                    reading_point = servers_check_list->top_list;
+                    do{
+                        temp_s *t = malloc(sizeof(temp_s));
+                        t->couple = malloc(sizeof(mem_data));
 
-                //preparo array tid per controllo del risultato
-                pthread_t tid_arr[servers_check_list->num_node];
-                int i = 0;
+                        t->couple->key      = key;
+                        t->couple->value    = value;
+                        t->addr_serv        = ((check_servers_node *)reading_point->value)->server;
 
-                while(reading_point){
-                    tid_arr[i] = comm_thread(&check_store,t);
-                    reading_point = reading_point->next;
-                    ++i;
-                }
+                        arr[i] = comm_thread(&check_store,t);
+                        arr_t[i] = t;
 
-                for(int j=0; j < i; j++){
-                    /*pthread_join(tid_arr[j],);*/
-                }
+                        reading_point = reading_point->next;
 
-                data_couples_list = insert_node(data_couples_list,node);
-                write(socket_fd,"k",1);
+                    }while(reading_point);
+
+                    for(int j=0; j<servers_check_list->num_node; i++){
+                        pthread_join(arr[j],(void **)&check_end_thr);
+                        if(check_end_thr){
+                            f_err = 1;
+                            break;
+                        }
+                    }
+
+                    //Ho trovato almeno un thread che mi ha restituito errore.
+                    //va introdotta la logica per dare al client l'errore giusto
+                    if(f_err == 1){
+                        for(int k=0; k<servers_check_list->num_node; k++){
+                            write(arr_t[k]->serv_fd,"abort",5);
+                            close(arr_t[k]->serv_fd);
+                        }
+                    }else{
+                        for(int k=0; k<servers_check_list->num_node; k++){
+                            write(arr_t[k]->serv_fd,"K",1);
+                            close(arr_t[k]->serv_fd);
+                        }
+                    }
+
+                } // altrimenti, non ci sono altri server e quindi non devo inoltrare nulla
             }
         }
 
+    }
+    return (NULL);
+}
+
+void *          check_store(void *temp_struct){
+    size_t  size_buf    = 128;
+    char    *buf        = malloc(size_buf * sizeof(buf));
+    int     *err        = malloc(sizeof(int));
+
+    ssize_t     byte        = 0;
+    *err                    = 0;
+    temp_s *input = temp_struct;
+
+    struct sockaddr_in *addr_server = malloc(sizeof(struct sockaddr_in));
+
+    addr_server->sin_family = AF_INET;
+    addr_server->sin_port   = htons((uint16_t)input->addr_serv->port);
+    inet_aton(input->addr_serv->addr,&addr_server->sin_addr);
+
+    //creato il socket con il server dato in incarico
+    input->serv_fd = socket(PF_INET,SOCK_STREAM,0);
+
+    connect(input->serv_fd,(struct sockaddr *)addr_server,sizeof(*addr_server));
+
+    write(input->serv_fd,"K?",2);
+
+    byte = read(input->serv_fd,buf,size_buf);
+    if(byte < 0 || (strcmp(buf,"K")) != 0){
+        *err = -1;
+        return(err);
+    }
+
+    write(input->serv_fd,input->couple->key,
+            strlen(input->couple->key));
+
+    byte = read(input->serv_fd,buf,size_buf);
+    if(byte < 0 || (strcmp(buf,"K")) != 0){
+        *err = -2;
+        return(err);
+    }
+
+    write(input->serv_fd,input->couple->value,
+            strlen(input->couple->value));
+
+    byte = read(input->serv_fd,buf,size_buf);
+    //controllo sia che sia stata ricevuta Value che la coppia non sia già presente nel server contattato
+    if(byte < 0 || (strcmp(buf,"K")) != 0){
+        if( (strcmp(buf,"!value")) != 0 ) {
+            *err = -3;
+            return (err);
+        }
+        if( (strcmp(buf,"found it")) != 0 ){
+            *err = -4;
+            return  (err);
+        }
+    }
+
+    write(input->serv_fd,"wait",4);
+
+    return (NULL);
+}
+
+void *          inner_comm_check(void *sock_server){
+    if(sock_server) {
+        int     *socket_s   = sock_server;
+        char    *key        = NULL;
+        char    *value      = NULL;
+        char    *buf        = NULL;
+
+        if(data_couples_list && data_couples_list->top_list){
+            void        *temp_node  = NULL;
+            node_list   *check_node = NULL;
+
+            int check               = 0;
+
+            write(*socket_s,"K",1);
+
+            key = receive_all(*socket_s);
+            if(!key){
+                write(*socket_s,"!K",2);
+                return (NULL);
+            }
+
+            write(*socket_s,"K",1);
+
+            value = receive_all(*socket_s);
+            if(!value) {
+                write(*socket_s,"!value",6);
+                return (NULL);
+            }
+
+            temp_node   = create_new_couples_node(key,value);
+            check_node  = search_node(data_couples_list,temp_node,&comp_couples);
+
+            if(check_node){
+                write(*socket_s,"found it",8);
+                return(NULL);
+            }
+
+            buf = receive_all(*socket_s);
+            if(!buf || (strcmp(buf,"wait")) == 0){
+                write(*socket_s,"err_wait",8);
+                return (NULL);
+            }
+            free(buf);
+            buf = NULL;
+
+            //Inizio sezione critica
+            buf = receive_all(*socket_s);
+            if(!buf || (strcmp(buf,"abort")) == 0 ){
+                free(temp_node);
+                //chiudo la sezione critica
+                return(NULL);
+            }
+            if(buf && (strcmp(buf,"K")) == 0 ){
+                data_couples_list = insert_node(data_couples_list,temp_node);
+                //chiudo la sezione critica
+            }
+        }
     }
     return (NULL);
 }

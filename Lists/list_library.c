@@ -46,7 +46,7 @@ void * search_node(head_list *head, node_list *node_to_find, FCOMPVALUE fcompval
     }
     return (ret);
 }
-
+/*
 head_list * delete_all_node (head_list *head){
     if(head){
         int end_list = 0;
@@ -62,7 +62,8 @@ head_list * delete_all_node (head_list *head){
 
     return(head);
 }
-
+ */
+ /*
 void * read_sequential_node (head_list *head, int *f_end_list){
     void *ret = NULL;
     if(head && f_end_list){
@@ -88,7 +89,7 @@ void * read_sequential_node (head_list *head, int *f_end_list){
 
     return(ret);
 }
-
+*/
 int modify_node(head_list *head, node_list *node_to_modify, void *new_value, FCOMPVALUE fcompvalue) {
     if(head && node_to_modify && new_value) {
         void *node = NULL;
