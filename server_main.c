@@ -9,7 +9,7 @@ int                     *client_fd;
 
 int main(int argc, char *argv[]) {
     int         check   = 0;
-    int         dim_buf = 1;
+    int         dim_buf = 20;
     ssize_t     readed  = 0;
 
     char        *buf    = malloc(dim_buf * sizeof(char));
@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
     this_server_client_addr->addr       = this_server_inner_addr->addr;
 
     inner_socket_fd = create_socket(this_server_inner_addr->port,this_server_inner_addr->addr);
+    comm_thread(&lister_from_other_server,&inner_socket_fd);
     if (inner_socket_fd < 0) {breaking_exec_err(4);}
 
     //socket in ascolto rispetto gli altri server.

@@ -354,7 +354,7 @@ char*           receive_all(int sockfd){
 }
 
 
-//Funzioni JOB Thread
+//Funzioni JOB Thread per la comunicazione DAL server VERSO gli altri server
 
 void *          store(void *socket_p){
     int             socket_fd           = *((int *)socket_p);
@@ -471,7 +471,7 @@ void *          check_store(void *temp_struct){
 
     connect(input->serv_fd,(struct sockaddr *)addr_server,sizeof(*addr_server));
 
-    write(input->serv_fd,"K?",2);
+    write(input->serv_fd,"sync_store",10);
 
     byte = read(input->serv_fd,buf,size_buf);
     if(byte < 0 || (strcmp(buf,"K")) != 0){
@@ -568,4 +568,43 @@ void *          inner_comm_check(void *sock_server){
         }
     }
     return (NULL);
+}
+
+void *          inner_comm_search(void *sock_server){
+
+    return (NULL);
+}
+
+
+// Funzioni JOB Thread per il decifrare i messaggi dagli altri server
+
+void *          lister_from_other_server(void *socket){
+    char        *buf            = malloc(128 * sizeof(char));
+    int         *inn_serv_fd    = malloc(sizeof(int));
+
+    ssize_t     readed          = 0;
+
+    while(1){
+        *inn_serv_fd = accept(*((int *)(socket)),NULL,NULL);
+        if(*inn_serv_fd < 0){
+            no_breaking_exec_err(3);
+        }else{
+            readed = read(*inn_serv_fd,buf,strlen(buf));
+            if(readed < 0){
+                no_breaking_exec_err(3);
+            }else{
+                if( (strcmp(buf,"sync_store")) == 0){
+                    comm_thread(&inner_comm_check,(void *)inn_serv_fd);
+                }else if( (strcmp(buf,"sync_search")) == 0){
+                    comm_thread(&inner_comm_search,(void *)inn_serv_fd);
+                }
+            }
+            bzero(buf,sizeof(*buf));
+        }
+
+
+        break;
+    }
+
+    return(NULL);
 }
