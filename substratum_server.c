@@ -447,7 +447,6 @@ void *          store(void *socket_p){
                 } // altrimenti, non ci sono altri server e quindi non devo inoltrare nulla
             }
         }
-
     }
     return (NULL);
 }
@@ -480,6 +479,24 @@ void *          check_store(void *temp_struct){
         return(err);
     }
 
+    if(data_couples_list->num_node == 0) {
+        write(input->serv_fd, "1_insert", 8);
+
+        buf = receive_all(input->serv_fd);
+        if (buf || (strcmp(buf, "K")) != 0) {
+            *err = 0;
+            return (err);
+        }
+    }else{
+        write(input->serv_fd, "n_insert", 8);
+
+        buf = receive_all(input->serv_fd);
+        if (buf || (strcmp(buf, "K")) != 0) {
+            *err = 0;
+            return (err);
+        }
+    }
+
     write(input->serv_fd,input->couple->key,
             strlen(input->couple->key));
 
@@ -510,65 +527,91 @@ void *          check_store(void *temp_struct){
     return (NULL);
 }
 
-void *          inner_comm_check(void *sock_server){
-    if(sock_server) {
-        int     *socket_s   = sock_server;
-        char    *key        = NULL;
-        char    *value      = NULL;
-        char    *buf        = NULL;
+void *          inner_comm_check(void *sock_server) {
+    if (sock_server) {
 
-        if(data_couples_list && data_couples_list->top_list){
-            void        *temp_node  = NULL;
-            node_list   *check_node = NULL;
+        int  socket_s = *((int *)sock_server);
+        char *key = NULL;
+        char *value = NULL;
+        char *buf = NULL;
 
-            int check               = 0;
+        void *temp_node = NULL;
+        node_list *check_node = NULL;
+        int check = 0;
 
-            write(*socket_s,"K",1);
+        if (data_couples_list) {
 
-            key = receive_all(*socket_s);
-            if(!key){
-                write(*socket_s,"!K",2);
+            write(socket_s, "K", 1);
+
+            buf = receive_all(socket_s);
+            if(!buf){
+                write(socket_s, "!K", 2);
+                return (NULL);
+            }else if((strcmp(buf,"n_insert")) == 0){
+                if(data_couples_list->num_node <= 0){
+                    write(socket_s, "!K",2);
+                    return(NULL); //non ci sono il numero giusto di nodi, in quanto per il server è il primo, mentre per chi manda la comunicazione, no.
+                }
+                write(socket_s,"K",1);
+            }else if((strcmp(buf,"1_insert")) == 0){
+                if(data_couples_list->num_node > 0){
+                    write(socket_s, "!K",2);
+                    return(NULL); //non ci sono il numero giusto di nodi, in quanto per il server NON è il primo, mentre per chi manda la comunicazione, si.
+                }
+                write(socket_s,"K",1);
+            }
+
+            key = receive_all(socket_s);
+            if (!key) {
+                write(socket_s, "!K", 2);
                 return (NULL);
             }
 
-            write(*socket_s,"K",1);
+            write(socket_s, "K", 1);
 
-            value = receive_all(*socket_s);
-            if(!value) {
-                write(*socket_s,"!value",6);
+            value = receive_all(socket_s);
+            if (!value) {
+                write(socket_s, "!value", 6);
                 return (NULL);
             }
 
-            temp_node   = create_new_couples_node(key,value);
-            check_node  = search_node(data_couples_list,temp_node,&comp_couples);
+            temp_node = create_new_couples_node(key, value);
 
-            if(check_node){
-                write(*socket_s,"found it",8);
-                return(NULL);
+            //Sono nel caso in cui vi è almeno un nodo inserito nei server, quindi esegui la ricerca.
+            if (data_couples_list->top_list) {
+
+                check_node = search_node(data_couples_list, temp_node, &comp_couples);
+
+                if (check_node) {
+                    write(socket_s, "found it", 8);
+                    return (NULL);
+                }
             }
 
-            buf = receive_all(*socket_s);
-            if(!buf || (strcmp(buf,"wait")) == 0){
-                write(*socket_s,"err_wait",8);
+            write(socket_s, "K", 1);
+
+            buf = receive_all(socket_s);
+            if (!buf || (strcmp(buf, "wait")) == 0) {
+                write(socket_s, "err_wait", 8);
                 return (NULL);
             }
             free(buf);
             buf = NULL;
 
             //Inizio sezione critica
-            buf = receive_all(*socket_s);
-            if(!buf || (strcmp(buf,"abort")) == 0 ){
+            buf = receive_all(socket_s);
+            if (!buf || (strcmp(buf, "abort")) == 0) {
                 free(temp_node);
                 //chiudo la sezione critica
-                return(NULL);
+                return (NULL);
             }
-            if((strcmp(buf,"K")) == 0 ){
-                data_couples_list = insert_node(data_couples_list,temp_node);
+            if ((strcmp(buf, "K")) == 0) {
+                data_couples_list = insert_node(data_couples_list, temp_node);
                 //chiudo la sezione critica
             }
         }
+        return (NULL);
     }
-    return (NULL);
 }
 
 void *          inner_comm_search(void *sock_server){
