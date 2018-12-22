@@ -421,7 +421,7 @@ void *          store(void *socket_p){
 
                     }while(reading_point);
 
-                    for(int j=0; j<servers_check_list->num_node; i++){
+                    for(int j=0; j<servers_check_list->num_node; j++){
                         pthread_join(arr[j],(void **)&check_end_thr);
                         if(check_end_thr){
                             f_err = 1;

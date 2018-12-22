@@ -68,4 +68,6 @@ void *              lister_from_other_server    (void *socket);
 void *              inner_comm_check(void *sock_server);
 void *              inner_comm_search(void *sock_server);
 
+
+char*           receive_all(int sockfd);
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H
