@@ -416,6 +416,7 @@ void *          store(void *socket_p){
 
                         arr[i] = comm_thread(&check_store,t);
                         arr_t[i] = t;
+                        i++;
 
                         reading_point = reading_point->next;
 

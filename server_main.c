@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
     socket_client_fd = create_socket(this_server_client_addr->port,this_server_client_addr->addr);
     if (socket_client_fd < 0) {breaking_exec_err(4);}
     client_fd = malloc(sizeof(int));
+
     while(check != 0) {
         *client_fd  = accept(socket_client_fd, NULL, NULL);
         if (client_fd < 0) {
