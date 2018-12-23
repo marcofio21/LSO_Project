@@ -586,7 +586,7 @@ void *          inner_comm_check(void *sock_server) {
             write(socket_s, "K", 1);
 
             value = receive_all(socket_s);
-            if (!value || strlen(value) == 0|| strcmp(buf,"abort") == 0) {
+            if (!value || strlen(value) == 0 || strcmp(buf,"abort") == 0) {
                 write(socket_s, "!value", 6);
                 return (NULL);
             }
@@ -606,8 +606,9 @@ void *          inner_comm_check(void *sock_server) {
 
             write(socket_s, "K", 1);
 
-            buf = receive_all(socket_s);
-            if (!buf || (strcmp(buf, "wait")) != 0) {
+            buf = malloc(10 * sizeof(char));
+            ssize_t byte = read(socket_s,buf,4);
+            if (byte < 0 || (strcmp(buf, "wait")) != 0) {
                 write(socket_s, "err_wait", 8);
                 return (NULL);
             }
@@ -625,6 +626,7 @@ void *          inner_comm_check(void *sock_server) {
                 data_couples_list = insert_node(data_couples_list, temp_node);
                 //chiudo la sezione critica
             }
+            free(buf);
         }
         return (NULL);
     }
