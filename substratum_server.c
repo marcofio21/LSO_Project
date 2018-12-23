@@ -407,8 +407,9 @@ void *          store(void *socket_p){
                     int i = 0;
                     int comm_other_server_socketfd = 0;
                     reading_point = servers_check_list->top_list;
+                    temp_s *t = NULL;
                     do{
-                        temp_s *t = malloc(sizeof(temp_s));
+                        t = malloc(sizeof(temp_s));
                         t->couple = malloc(sizeof(mem_data));
 
                         t->couple->key      = key;
@@ -420,6 +421,7 @@ void *          store(void *socket_p){
                         i++;
 
                         reading_point = reading_point->next;
+                        t = NULL;
 
                     }while(reading_point);
 
@@ -477,7 +479,11 @@ void *          check_store(void *temp_struct){
 
     connect(input->serv_fd,(struct sockaddr *)addr_server,sizeof(*addr_server));
 
-    write(input->serv_fd,"sync_store",10);
+    byte = write(input->serv_fd,"sync_store",10);
+    if(byte <= 0){
+        *err = -1;
+        return(err);
+    }
 
     byte = read(input->serv_fd,buf,size_buf);
     if(byte < 0 || (strcmp(buf,"K")) != 0){
@@ -489,7 +495,7 @@ void *          check_store(void *temp_struct){
         write(input->serv_fd, "1_insert", 8);
 
         buf = receive_all(input->serv_fd);
-        if (buf || (strcmp(buf, "K")) != 0) {
+        if (!buf || (strcmp(buf, "K")) != 0) {
             *err = 0;
             return (err);
         }
@@ -497,7 +503,7 @@ void *          check_store(void *temp_struct){
         write(input->serv_fd, "n_insert", 8);
 
         buf = receive_all(input->serv_fd);
-        if (buf || (strcmp(buf, "K")) != 0) {
+        if (!buf || (strcmp(buf, "K")) != 0) {
             *err = 0;
             return (err);
         }
@@ -506,8 +512,8 @@ void *          check_store(void *temp_struct){
     write(input->serv_fd,input->couple->key,
             strlen(input->couple->key));
 
-    byte = read(input->serv_fd,buf,size_buf);
-    if(byte < 0 || (strcmp(buf,"K")) != 0){
+    buf = receive_all(input->serv_fd);
+    if(!buf || (strcmp(buf,"K")) != 0){
         *err = -2;
         return(err);
     }
@@ -515,9 +521,9 @@ void *          check_store(void *temp_struct){
     write(input->serv_fd,input->couple->value,
             strlen(input->couple->value));
 
-    byte = read(input->serv_fd,buf,size_buf);
+    buf = receive_all(input->serv_fd);
     //controllo sia che sia stata ricevuta Value che la coppia non sia già presente nel server contattato
-    if(byte < 0 || (strcmp(buf,"K")) != 0){
+    if(!buf || (strcmp(buf,"K")) != 0){
         if( (strcmp(buf,"!value")) != 0 ) {
             *err = -3;
             return (err);
@@ -525,6 +531,9 @@ void *          check_store(void *temp_struct){
         if( (strcmp(buf,"found it")) != 0 ){
             *err = -4;
             return  (err);
+        }else{
+            *err = 0;
+            return (err);
         }
     }
 
@@ -543,14 +552,15 @@ void *          inner_comm_check(void *sock_server) {
 
         void *temp_node = NULL;
         node_list *check_node = NULL;
-        int check = 0;
+        ssize_t check = 0;
 
         if (data_couples_list) {
 
-            write(socket_s, "K", 1);
+            check = write(socket_s, "K", 1);
+            if(check<=0){no_breaking_exec_err(6);return(NULL);}
 
             buf = receive_all(socket_s);
-            if(!buf){
+            if(!buf || strcmp(buf,"abort") == 0){
                 write(socket_s, "!K", 2);
                 return (NULL);
             }else if((strcmp(buf,"n_insert")) == 0){
@@ -568,7 +578,7 @@ void *          inner_comm_check(void *sock_server) {
             }
 
             key = receive_all(socket_s);
-            if (!key) {
+            if (!key || strlen(key) == 0 || strcmp(buf,"abort") == 0) {
                 write(socket_s, "!K", 2);
                 return (NULL);
             }
@@ -576,7 +586,7 @@ void *          inner_comm_check(void *sock_server) {
             write(socket_s, "K", 1);
 
             value = receive_all(socket_s);
-            if (!value) {
+            if (!value || strlen(value) == 0|| strcmp(buf,"abort") == 0) {
                 write(socket_s, "!value", 6);
                 return (NULL);
             }
@@ -597,7 +607,7 @@ void *          inner_comm_check(void *sock_server) {
             write(socket_s, "K", 1);
 
             buf = receive_all(socket_s);
-            if (!buf || (strcmp(buf, "wait")) == 0) {
+            if (!buf || (strcmp(buf, "wait")) != 0) {
                 write(socket_s, "err_wait", 8);
                 return (NULL);
             }
@@ -630,16 +640,17 @@ void *          inner_comm_search(void *sock_server){
 
 void *          lister_from_other_server(void *socket){
     char        *buf            = malloc(128 * sizeof(char));
-    int         *inn_serv_fd    = malloc(sizeof(int));
+    int         *inn_serv_fd    = NULL;
 
     ssize_t     readed          = 0;
 
-    while(1){
+    do{
+        inn_serv_fd = malloc(sizeof(int));
         *inn_serv_fd = accept(*((int *)(socket)),NULL,NULL);
         if(*inn_serv_fd < 0){
             no_breaking_exec_err(3);
         }else{
-            readed = read(*inn_serv_fd,buf,strlen(buf));
+            readed = read(*inn_serv_fd,buf,128);
             if(readed < 0){
                 no_breaking_exec_err(3);
             }else{
@@ -651,10 +662,7 @@ void *          lister_from_other_server(void *socket){
             }
             bzero(buf,sizeof(*buf));
         }
-
-
-        break;
-    }
+    }while(*inn_serv_fd != -1);
 
     return(NULL);
 }
