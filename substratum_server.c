@@ -385,18 +385,19 @@ void *          store(void *socket_p){
             return (NULL);
         }
 
-        //cerco nella lista locale se c'è la chiave inserita e memorizzata in input.
         if (data_couples_list) {
             void *node      = create_new_couples_node(key,value);
-            node_ret        = search_node(data_couples_list,node,&comp_couples);
+
+            if(data_couples_list->num_node > 0) {
+                //cerco nella lista locale se c'è la chiave inserita e memorizzata in input.
+                node_ret = search_node(data_couples_list, node, &comp_couples);
+            }
 
 
-            //Aspetto segnale che tutti l'abbiano memorizzato "???"
-            //Cosa faccio se uno non lo memorizza, magari perché andato offline "???"
-
-            if(node_ret){
+            if(data_couples_list->num_node > 0 && node_ret){
                 write(socket_fd,"found",5);
             }else{
+                //controllo il numero di server
                 if(servers_check_list && servers_check_list->top_list) {
 
                     //creo array per i TID dei thread per la comunicazione con gli altri server
@@ -441,11 +442,16 @@ void *          store(void *socket_p){
                         for(int k=0; k<servers_check_list->num_node; k++){
                             write(arr_t[k]->serv_fd,"K",1);
                             close(arr_t[k]->serv_fd);
+                            data_couples_list = insert_node(data_couples_list,node);
                         }
                     }
 
-                } // altrimenti, non ci sono altri server e quindi non devo inoltrare nulla
+                }else { // altrimenti, non ci sono altri server e quindi non devo inoltrare nulla ed inserisco direttamente.
+                    data_couples_list = insert_node(data_couples_list,node);
+                }
             }
+        }else{
+            breaking_exec_err(9);
         }
     }
     return (NULL);

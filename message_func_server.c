@@ -14,6 +14,7 @@ char *pool_be_err[] = {
         "ERR_SOCKET",                       //6
         "ERR_LISTEN",                       //7
         "ERR_NO_SUCH_SERVERS_LIST",         //8
+        "NO_INIT_LIST!",                    //9
         NULL
 };
 
