@@ -390,7 +390,12 @@ void *          store(void *socket_p){
 
             if(data_couples_list->num_node > 0) {
                 //cerco nella lista locale se c'è la chiave inserita e memorizzata in input.
-                node_ret = search_node(data_couples_list, node, &comp_couples);
+                node_list* temp_node=malloc(sizeof(node_list));
+                temp_node->value=node;
+                node_ret = search_node(data_couples_list, temp_node, &comp_couples);
+
+                temp_node->value=NULL;
+                free(temp_node);
             }
 
 
@@ -440,22 +445,31 @@ void *          store(void *socket_p){
                             write(arr_t[k]->serv_fd,"abort",5);
                             close(arr_t[k]->serv_fd);
                         }
+                        //il client sà che qualche thread ha qualche errore
+                        write(socket_fd,"?",1);
                     }else{
                         for(int k=0; k<servers_check_list->num_node; k++){
                             write(arr_t[k]->serv_fd,"K",1);
                             close(arr_t[k]->serv_fd);
-                            data_couples_list = insert_node(data_couples_list,node);
+
                         }
+                        data_couples_list = insert_node(data_couples_list,node);
+                        //il client sà che l'inserimento è andato a buon fine
+                        write(socket_fd,"K",1);
                     }
 
                 }else { // altrimenti, non ci sono altri server e quindi non devo inoltrare nulla ed inserisco direttamente.
                     data_couples_list = insert_node(data_couples_list,node);
+                    //il client sà che l'inserimento è andato a buon fine
+                    write(socket_fd,"K",1);
                 }
             }
         }else{
             breaking_exec_err(9);
         }
     }
+
+
     return (NULL);
 }
 
