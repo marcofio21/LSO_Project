@@ -368,14 +368,14 @@ void *          store(void *socket_p){
     if(socket_p) {
         node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
 
-        write(socket_fd, "k", 1);
+        write(socket_fd, "K", 1);
         key = receive_all(socket_fd); //leggo la chiave.
         if (!key) {
             write(socket_fd, "!sk", 3);
             return (NULL);
         }
 
-        write(socket_fd, "k", 1);
+        write(socket_fd, "K", 1);
 
         value = receive_all(socket_fd); //leggo la value
         if (!value) {
@@ -631,19 +631,20 @@ void *          corrupt(void *socket_p){
     int             socket_fd           = *((int *)socket_p);
     mem_data        *node_ret           = NULL;
     char            *key                = NULL;
-    char            *new_value              = NULL;
+    char            *new_value          = NULL;
+
 
     if(socket_p) {
         node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
 
-        write(socket_fd, "k", 1);
+        write(socket_fd, "K", 1);
         key = receive_all(socket_fd); //leggo la chiave.
         if (!key) {
             write(socket_fd, "!sk", 3);
             return (NULL);
         }
 
-        write(socket_fd, "k", 1);
+        write(socket_fd, "K", 1);
 
         new_value = receive_all(socket_fd); //leggo la value
         if (!new_value) {
@@ -668,10 +669,17 @@ void *          corrupt(void *socket_p){
                     free(t);
 
                     write(socket_fd, "K",1);
-                } else {
-                    write(socket_fd, "not found", 5);
                 }
+
+
+
             }
+              //copre il caso di lista vuota o coppia non trovata
+              if(!node_ret) {
+                  write(socket_fd,"no_found",8);
+
+              }
+
             close(socket_fd);
         }
     }
@@ -690,6 +698,7 @@ void *          list(void *socket_p){
         socket = *((int *)socket_p);
         buf = malloc(128 * sizeof(char));
 
+        //invio numero di nodi lista locale
         sprintf(buf,"%d",data_couples_list->num_node);
         check = write(socket,buf,strlen(buf));
         if(check<0){return(NULL);}
@@ -699,20 +708,21 @@ void *          list(void *socket_p){
         if(!buf || (strcmp(buf,"K"))!= 0){ return (NULL);}
         bzero(buf,sizeof(*buf));
 
+        //se la lista non è vuota la scorro e leggo i nodi
         if(data_couples_list->num_node > 0) {
             node_list   *read_p = data_couples_list->top_list;;
             mem_data    *t      = read_p->value;
 
             for (int i = 0; i < data_couples_list->num_node; i++) {
 
-                check = write(socket,t->key,strlen(t->key));
+                check = write(socket,t->key,strlen(t->key));//invio chiave
                 if(check<0){return(NULL);}
 
                 buf = receive_all(socket);
                 if(!buf || (strcmp(buf,"K"))!= 0){ return (NULL);}
                 bzero(buf,sizeof(*buf));
 
-                check = write(socket,t->value,strlen(t->value));
+                check = write(socket,t->value,strlen(t->value));//invio valore
                 if(check<0){return(NULL);}
 
                 buf = receive_all(socket);
@@ -720,7 +730,10 @@ void *          list(void *socket_p){
                 bzero(buf,sizeof(*buf));
 
                 read_p = read_p->next;
-                t      = read_p->value;
+                if(read_p){
+                    t      = read_p->value;
+                }
+
             }
         }
         close(socket);
