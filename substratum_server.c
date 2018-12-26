@@ -633,11 +633,6 @@ void *          corrupt(void *socket_p){
     char            *key                = NULL;
     char            *new_value              = NULL;
 
-    int             *check_end_thr      = NULL;
-    int             f_err               = 0;
-
-    node_list       *reading_point      = NULL;
-
     if(socket_p) {
         node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
 
@@ -680,6 +675,57 @@ void *          corrupt(void *socket_p){
             close(socket_fd);
         }
     }
+
+    return(NULL);
+}
+
+
+
+void *          list(void *socket_p){
+    ssize_t check;
+    char *buf = NULL;
+    int  socket;
+
+    if(socket_p){
+        socket = *((int *)socket_p);
+        buf = malloc(128 * sizeof(char));
+
+        sprintf(buf,"%d",data_couples_list->num_node);
+        check = write(socket,buf,strlen(buf));
+        if(check<0){return(NULL);}
+        bzero(buf,sizeof(*buf));
+
+        buf = receive_all(socket);
+        if(!buf || (strcmp(buf,"K"))!= 0){ return (NULL);}
+        bzero(buf,sizeof(*buf));
+
+        if(data_couples_list->num_node > 0) {
+            node_list   *read_p = data_couples_list->top_list;;
+            mem_data    *t      = read_p->value;
+
+            for (int i = 0; i < data_couples_list->num_node; i++) {
+
+                check = write(socket,t->key,strlen(t->key));
+                if(check<0){return(NULL);}
+
+                buf = receive_all(socket);
+                if(!buf || (strcmp(buf,"K"))!= 0){ return (NULL);}
+                bzero(buf,sizeof(*buf));
+
+                check = write(socket,t->value,strlen(t->value));
+                if(check<0){return(NULL);}
+
+                buf = receive_all(socket);
+                if(!buf || (strcmp(buf,"K"))!= 0){ return (NULL);}
+                bzero(buf,sizeof(*buf));
+
+                read_p = read_p->next;
+                t      = read_p->value;
+            }
+        }
+        close(socket);
+    }
+
 
     return(NULL);
 }

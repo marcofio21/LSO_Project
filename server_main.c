@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
                     /*comm_thread(funzione per lo storage);*/
                 }else if(buf[0] == 'l'){
                     /*comand LIST*/
-                    /*comm_thread(funzione per ricevere la lista);*/
+                    comm_thread(&list,client_fd);
                 }else if(buf[0] == 'e'){
                     /*comand EXIT*/
                     /*comm_thread(chiude tutto);*/

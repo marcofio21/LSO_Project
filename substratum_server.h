@@ -41,33 +41,35 @@ server_addr *       check_dot_addr                      (char *input, int length
 
 
 //interfaccia che integra tutta la logica per il controllo dello stato degli altri server. restituirà 1 se sono online, oppure farà la EXIT direttamente.
-int                 first_conn_interface();
+int                 first_conn_interface                ();
 
-int                 create_socket(int port, char *ip);
+int                 create_socket                       (int port, char *ip);
 
 //Funzione che si occupa del controllo della disponibilità di UNO degli altri server.
-void *              test_server_conn(check_servers_node *server_node);
+void *              test_server_conn                    (check_servers_node *server_node);
 
 //Scorre la lista e controlla lo stato dei server, se ne trova uno offline, ritorna -1.
-int                 check_conn_to_other_server();
+int                 check_conn_to_other_server          ();
 
 //Crea la lista degli altri server a cui connettersi e controllare lo stato
 
-server_addr *       create_list_other_server(char *conf_file_link);
+server_addr *       create_list_other_server            (char *conf_file_link);
 
 
 
 //crea un thread che si occupa del socket dato in ingresso.
-pthread_t           comm_thread                 (FJOBTHREAD *fjob_t, void *par);
+pthread_t           comm_thread                         (FJOBTHREAD *fjob_t, void *par);
 
 //THREAD JOBS
-void *              store                       (void *socket_p);
-void *              check_store                 (void *socker_p);
+void *              store                               (void *socket_p);
+void *              check_store                         (void *socker_p);
 
-void *              corrupt                     (void *socket_p);
+void *              corrupt                             (void *socket_p);
 
-void *              lister_from_other_server    (void *socket);
-void *              inner_comm_check(void *sock_server);
-void *              inner_comm_search(void *sock_server);
+void *              list                                (void *socket_p);
+
+void *              lister_from_other_server            (void *socket);
+void *              inner_comm_check                    (void *sock_server);
+void *              inner_comm_search                   (void *sock_server);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H
