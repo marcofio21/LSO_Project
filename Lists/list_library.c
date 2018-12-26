@@ -33,10 +33,11 @@ head_list * insert_node (head_list *head, void *data){
 }
 
 void * search_node(head_list *head, node_list *node_to_find, FCOMPVALUE fcompvalue){
-    node_list *ret = NULL;
+    node_list *p        = NULL;
+    node_list *ret      = NULL;
     if(head && node_to_find){
-        node_list *p = head->top_list;
-        while(head->top_list && !ret){
+        p = head->top_list;
+        while(p && !ret){
             if(fcompvalue(p->value,node_to_find->value) == 0){
                 ret = p;
             }else{

@@ -56,10 +56,10 @@ int main(int argc, char *argv[]) {
             }else{
                 if(buf[0] =='s'){
                     /*comando STORE */
-                     comm_thread(&store,client_fd);
+                    comm_thread(&store,client_fd);
                 }else if(buf[0] == 'c'){
                     /*comand CORRUPT*/
-                    /*comm_thread(funzione per corrompere il thread);*/
+                    comm_thread(&corrupt,client_fd);
                 }else if(buf[0] == 'S'){
                     /*comand SEARCH*/
                     /*comm_thread(funzione per lo storage);*/

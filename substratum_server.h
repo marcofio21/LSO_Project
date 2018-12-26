@@ -64,6 +64,8 @@ pthread_t           comm_thread                 (FJOBTHREAD *fjob_t, void *par);
 void *              store                       (void *socket_p);
 void *              check_store                 (void *socker_p);
 
+void *              corrupt                     (void *socket_p);
+
 void *              lister_from_other_server    (void *socket);
 void *              inner_comm_check(void *sock_server);
 void *              inner_comm_search(void *sock_server);
