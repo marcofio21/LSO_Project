@@ -69,7 +69,7 @@ void *              corrupt                             (void *socket_p);
 void *              list                                (void *socket_p);
 
 void *              lister_from_other_server            (void *socket);
-void *              inner_comm_check                    (void *sock_server);
-void *              inner_comm_search                   (void *sock_server);
+void *              inner_comm_check_store(void *sock_server);
+void *              inner_comm_search(void *sock_server);
 
 #endif //LSO_PROJECT_SUBSTRATUM_SERVER_H

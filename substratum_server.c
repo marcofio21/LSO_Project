@@ -555,7 +555,7 @@ void *check_store(void *temp_struct) {
     return (NULL);
 }
 
-void *inner_comm_check(void *sock_server) {
+void *inner_comm_check_store(void *sock_server) {
     if (sock_server) {
 
         int socket_s = *((int *) sock_server);
@@ -620,8 +620,65 @@ void *inner_comm_check(void *sock_server) {
 }
 
 void *inner_comm_search(void *sock_server) {
+    mem_data *ret = NULL;
 
-    return (NULL);
+    if(sock_server) {
+        char *buf ;
+        char *value;
+
+        ret = malloc(sizeof(mem_data));
+
+        ssize_t byte = 0;
+        temp_s *input = sock_server;
+
+        struct sockaddr_in *addr_server = malloc(sizeof(struct sockaddr_in));
+
+        addr_server->sin_family = AF_INET;
+        addr_server->sin_port = htons((uint16_t) input->addr_serv->port);
+        inet_aton(input->addr_serv->addr, &addr_server->sin_addr);
+
+        //creato il socket con il server dato in incarico
+        input->serv_fd = socket(PF_INET, SOCK_STREAM, 0);
+
+        byte = connect(input->serv_fd, (struct sockaddr *) addr_server, sizeof(*addr_server));
+        if (byte < 0) {close(input->serv_fd); return (NULL);}
+        byte = write(input->serv_fd, "search", 6);
+        if (byte <= 0) {close(input->serv_fd); return(NULL);}
+
+        buf = receive_all(input->serv_fd);
+        if(!buf || strcmp(buf,"K") != 0){close(input->serv_fd); return(NULL);}
+        free(buf);
+        buf = NULL;
+
+        //scrivo valore : x
+
+        byte = write(input->serv_fd,input->couple->key,strlen(input->couple->key));
+        if (byte <= 0) {close(input->serv_fd); return(NULL);}
+
+        buf = receive_all(input->serv_fd);
+        if(!buf || strncmp(buf,"K",1) != 0){close(input->serv_fd); return(NULL);}
+        free(buf);
+        buf = NULL;
+
+        //Ricezione valore : y
+
+        value = receive_all(input->serv_fd);
+        if(!value){
+            write(input->serv_fd,"!K",2);
+            close(input->serv_fd);
+            return(NULL);
+        }
+
+        byte = write(input->serv_fd,"K",1);
+        if (byte <= 0) {close(input->serv_fd);}
+
+        //Fine Ricezione
+
+        ret->key = input->couple->key;
+        ret->value = value;
+    }
+
+    return (ret);
 }
 
 
@@ -629,20 +686,23 @@ void *search(void *socket_p){
     ssize_t check;
     mem_data *node_ret = NULL;
     char *key = NULL;
+    char *buf = NULL;
 
     mem_data *check_end_thr = NULL;
     int f_err = 0;
 
     node_list *reading_point = NULL;
 
+    //la funzione è la medesima sia tra server che tra server-client
     if (socket_p) {
         int socket_fd = *((int *) socket_p);
-        node_list *ret_node = NULL;
+        node_list *r_node = NULL;
 
         struct sockaddr_in  client;
         socklen_t           size_sockclient;
 
         check = getsockname(socket_fd,(struct sockaddr *)&client,&size_sockclient);
+        if(check<0){return(NULL);}
 
         node_list *node_to_search = malloc(sizeof(node_list));
 
@@ -655,29 +715,37 @@ void *search(void *socket_p){
 
         node_to_search->value = t;
 
-        ret_node = search_node(servers_check_list,node_to_search,&comp_addr);
+        //cerco addr:porta nella lista dei server, se la trovo, vuol dire che è per la comunicazione interna; altrimenti, è il client a contantattare il server.
+        r_node = search_node(servers_check_list,node_to_search,&comp_addr);
 
-        //QUI!!!!!!!!!!!!!!!!!!!!!!!//
-        if(!ret_node) {
-            /*node_list *node_to_check = malloc(sizeof(node_list)); *///Nodo d'appoggio per la ricerca
+        //---------------------------------//
 
-            check = write(socket_fd, "K", 1);
-            if(check<0){return(NULL);}
+        free(t);
+        t = NULL;
+        free(node_to_search);
+        node_to_search = NULL;
 
-            key = receive_all(socket_fd); //leggo la chiave.
-            if (!key) {
-                write(socket_fd, "!sk", 3);
-                return (NULL);
-            }
+        check = write(socket_fd, "K", 1);
+        if(check<0){return(NULL);}
 
-            check = write(socket_fd, "K", 1);
-            if(check<0){return(NULL);}
+        key = receive_all(socket_fd); //leggo la chiave.
+        if (!key) {
+            write(socket_fd, "!sk", 3);
+            return (NULL);
+        }
+
+        check = write(socket_fd, "K", 1);
+        if(check<0){return(NULL);}
+
+        if(!r_node) {
+            //Il client ha contattato il server, richiedendo la SEARCH.
+
 
             if (data_couples_list) {
                 void *node = create_new_couples_node(key, NULL);
 
                 if (data_couples_list->num_node > 0) {
-                    //cerco nella lista locale se c'è la chiave inserita e memorizzata in input.
+                    //cerco nella lista locale se c'è la chiave in input.
                     node_list *temp_node = malloc(sizeof(node_list));
                     temp_node->value = node;
                     node_ret = search_node(data_couples_list, temp_node, &comp_couples);
@@ -712,7 +780,7 @@ void *search(void *socket_p){
                         t->couple->key = key;
                         t->addr_serv = ((check_servers_node *) reading_point->value)->server;
 
-                        //arr[i] = comm_thread(&check_search, t);
+                        arr[i] = comm_thread(&inner_comm_search, t);
                         arr_t[i] = t;
                         i++;
 
@@ -725,28 +793,59 @@ void *search(void *socket_p){
                     for (int j = 0; j < servers_check_list->num_node; j++) {
                         pthread_join(arr[j], (void **) &check_end_thr);
                         swap_p = check_end_thr;
-                        if (!check_end_thr || (strcmp(node_ret->key,swap_p->key) == 0 && strcmp(node_ret->value,swap_p->value) != 0)) {
-                            write(socket_fd,"ledge_corrupt",13);
+                        if (!check_end_thr ||
+                            (strcmp(node_ret->key, swap_p->key) == 0 && strcmp(node_ret->value, swap_p->value) != 0)) {
+                            write(socket_fd, "ledge_corrupt", 13);
                             close(socket_fd);
 
                             //dealloco tutto
 
-                            return(NULL);
+                            return (NULL);
                         }
                     }
 
-                    check = write(socket_fd,node_ret->value,strlen(node_ret->value));
-                    if(check<0){return(NULL);} //QUI
+                }
+                //Scrivo il valore y al client.
+                check = write(socket_fd, node_ret->value, strlen(node_ret->value));
+                if (check < 0) {
                     //dealloco tutto
-                }else{
-                    //non ci sono altri server
+                    return (NULL);
                 }
             }
         }else{
             //comunicazione tra server
-        }
-    }
 
+            if(data_couples_list){
+                node_list   *temp_node = malloc(sizeof(node_list));
+                mem_data    *data_to_s = malloc(sizeof(mem_data));
+
+                data_to_s->key = key;
+
+                node_list *ret_node = search_node(data_couples_list,temp_node,&comp_couples);
+
+                if(!ret_node){
+                    write(socket_fd,"!K",2);
+                    close(socket_fd);
+                    return(NULL); //lista inconsistente
+                }else{
+                    node_ret = ret_node->value;
+
+                    check = write(socket_fd,node_ret->value,strlen(node_ret->value));
+                    if(check < 0) {
+                        write(socket_fd, "!K", 2);
+                        close(socket_fd);
+                        return (NULL);
+                    }
+
+                    buf = receive_all(socket_fd);
+                    if(!buf || strcmp(buf,"K")!= 0){
+                        write(socket_fd,"!K",2);
+                    }
+                }
+            }else{write(socket_fd,"!K",2); close(socket_fd);}
+        }
+        close(socket_fd);
+    }
     return(NULL);
 }
 
@@ -865,6 +964,7 @@ void *lister_from_other_server(void *socket) {
     do {
         inn_serv_fd = malloc(sizeof(int));
         *inn_serv_fd = accept(*((int *) (socket)), NULL, NULL);
+
         if (*inn_serv_fd < 0) {
             no_breaking_exec_err(3);
         } else {
@@ -873,9 +973,9 @@ void *lister_from_other_server(void *socket) {
                 no_breaking_exec_err(3);
             } else {
                 if ((strcmp(buf, "sync_store")) == 0) {
-                    comm_thread(&inner_comm_check, (void *) inn_serv_fd);
-                } else if ((strcmp(buf, "sync_search")) == 0) {
-                    comm_thread(&inner_comm_search, (void *) inn_serv_fd);
+                    comm_thread(&inner_comm_check_store, (void *) inn_serv_fd);
+                } else if ((strcmp(buf, "search")) == 0) {
+                    comm_thread(&search, (void *) inn_serv_fd);
                 }
             }
             bzero(buf, sizeof(*buf));
