@@ -64,33 +64,7 @@ head_list * delete_all_node (head_list *head){
     return(head);
 }
  */
- /*
-void * read_sequential_node (head_list *head, int *f_end_list){
-    void *ret = NULL;
-    if(head && f_end_list){
-        if(!head->reading_point){
-            if(head->top_list) {
-                ret = head->top_list->value;
-                head->reading_point = head->top_list->next;
-                if (!head->reading_point) {
-                    *f_end_list = 1;
-                }
-            }else{
-                *f_end_list = 1;
-            }
-        }else {
-            ret = head->reading_point->value;
-            head->reading_point = head->reading_point->next;
-            if (!head->reading_point) {
-                head->reading_point = NULL;
-                *f_end_list = 1;
-            }
-        }
-    }
 
-    return(ret);
-}
-*/
 int modify_node(head_list *head, node_list *node_to_modify, void *new_value, FCOMPVALUE fcompvalue) {
     if(head && node_to_modify && new_value) {
         void *node = NULL;
