@@ -23,6 +23,9 @@
 
 typedef void *          (FJOBTHREAD)(void *fjob);
 
+int client_port;
+int inner_port;
+
 //LISTA SERVER
 head_list       *servers_check_list;
 
@@ -65,6 +68,8 @@ void *              store                               (void *socket_p);
 void *              check_store                         (void *socker_p);
 
 void *              corrupt                             (void *socket_p);
+
+void *              search                              (void *socket_p);
 
 void *              list                                (void *socket_p);
 
