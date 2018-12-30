@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 
 typedef struct head_generic_list head_list;
 typedef struct node_generic_list node_list;
@@ -13,6 +14,7 @@ struct head_generic_list{
     node_list               *reading_point;
 
     int                     num_node;
+    pthread_mutex_t         *mutex;
 };
 
 struct node_generic_list {

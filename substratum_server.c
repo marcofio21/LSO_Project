@@ -391,11 +391,16 @@ void *store(void *socket_p) {
         if (data_couples_list) {
             void *node = create_new_couples_node(key, value);
 
+            //MUTEX LOCKED
+            pthread_mutex_lock(data_couples_list->mutex);
             if (data_couples_list->num_node > 0) {
+
                 //cerco nella lista locale se c'è la chiave inserita e memorizzata in input.
                 node_list *temp_node = malloc(sizeof(node_list));
                 temp_node->value = node;
+
                 node_ret = search_node(data_couples_list, temp_node, &comp_couples);
+
 
                 temp_node->value = NULL;
                 free(temp_node);
@@ -404,6 +409,9 @@ void *store(void *socket_p) {
                     return (NULL);
                 }
             }
+            //MUTEX UNLOCKED
+            pthread_mutex_unlock(data_couples_list->mutex);
+
 
             //controllo il numero di server
             if (servers_check_list && servers_check_list->top_list) {
@@ -459,7 +467,17 @@ void *store(void *socket_p) {
                         close(arr_t[k]->serv_fd);
 
                     }
+
+
+                    //MUTEX LOCKED
+                    pthread_mutex_lock(data_couples_list->mutex);
+
                     data_couples_list = insert_node(data_couples_list, node);
+
+                    //MUTEX UNLOCKED
+                    pthread_mutex_unlock(data_couples_list->mutex);
+
+
                     //il client sà che l'inserimento è andato a buon fine
                     write(socket_fd, "K", 1);
                 }
@@ -480,7 +498,6 @@ void *store(void *socket_p) {
 
     return (NULL);
 }
-
 void *check_store(void *temp_struct) {
     size_t size_buf = 128;
     char *buf = malloc(size_buf * sizeof(buf));
@@ -559,7 +576,6 @@ void *check_store(void *temp_struct) {
 
     return (NULL);
 }
-
 void *inner_comm_check_store(void *sock_server) {
     if (sock_server) {
 
@@ -624,64 +640,54 @@ void *inner_comm_check_store(void *sock_server) {
     return (NULL);
 }
 
-void *inner_comm_search(void *sock_server) {
-    mem_data *ret = NULL;
 
-    if(sock_server) {
-        char *buf = malloc(128 * sizeof(char));
-        char *value = malloc(128 * sizeof(char));
+void *corrupt(void *socket_p) {
+    int socket_fd = *((int *) socket_p);
+    mem_data *node_ret = NULL;
+    char *key = malloc(128 * sizeof(char));
+    char *new_value = malloc(128 * sizeof(char));
 
-        ret = malloc(sizeof(mem_data));
 
-        ssize_t byte = 0;
-        temp_s *input = sock_server;
+    if (socket_p) {
 
-        struct sockaddr_in *addr_server = malloc(sizeof(struct sockaddr_in));
-
-        addr_server->sin_family = AF_INET;
-        addr_server->sin_port = htons((uint16_t) input->addr_serv->port);
-        inet_aton(input->addr_serv->addr, &addr_server->sin_addr);
-
-        //creato il socket con il server dato in incarico
-        input->serv_fd = socket(PF_INET, SOCK_STREAM, 0);
-
-        byte = connect(input->serv_fd, (struct sockaddr *) addr_server, sizeof(*addr_server));
-        if (byte < 0) {close(input->serv_fd); return (NULL);}
-        byte = write(input->serv_fd, "search", 6);
-        if (byte <= 0) {close(input->serv_fd); return(NULL);}
-
-        buf = receive_all(input->serv_fd, buf);
-        if(!buf || strcmp(buf,"K") != 0){close(input->serv_fd); return(NULL);}
-        bzero(buf,strlen(buf));
-
-        //scrivo valore : x
-
-        byte = write(input->serv_fd,input->couple->key,strlen(input->couple->key));
-        if (byte <= 0) {close(input->serv_fd); return(NULL);}
-
-        buf = receive_all(input->serv_fd, buf);
-        if(!buf || strncmp(buf,"K",1) != 0){close(input->serv_fd); return(NULL);}
-        bzero(buf,strlen(buf));
-
-        //Ricezione valore : y
-
-        value = receive_all(input->serv_fd, value);
-        if(!value && strcmp(value,"") == 0){
-            write(input->serv_fd,"!K",2);
-            close(input->serv_fd);
-            return(NULL);
+        write(socket_fd, "K", 1);
+        key = receive_all(socket_fd, key); //leggo la chiave.
+        if (!key) {
+            write(socket_fd, "!sk", 3);
+            return (NULL);
         }
 
-        byte = write(input->serv_fd,"K",1);
-        if (byte <= 0) {close(input->serv_fd);}
+        write(socket_fd, "K", 1);
 
-        //Fine Ricezione
+        new_value = receive_all(socket_fd, new_value); //leggo la value
+        if (!new_value) {
+            write(socket_fd, "!vl", 3);
+            return (NULL);
+        }
 
-        ret->key = input->couple->key;
-        ret->value = value;
+        if (data_couples_list) {
+            node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
+            node_to_check->value = malloc(sizeof(mem_data));
+            ((mem_data *)node_to_check->value)->key = key;
+
+
+            node_ret = search_node(data_couples_list,node_to_check,&comp_couples);
+
+
+            if (!node_ret) {
+                write(socket_fd,"no_found", 8);
+            }else{
+                ((mem_data *)(((node_list *)node_ret)->value))->value = new_value;
+                write(socket_fd,"K",1);
+            }
+
+        }else {
+                write(socket_fd, "no_found",8);
+        }
+        close(socket_fd);
     }
 
-    return (ret);
+    return (NULL);
 }
 
 
@@ -854,53 +860,64 @@ void *search(void *socket_p){
     }
     return(NULL);
 }
+void *inner_comm_search(void *sock_server) {
+    mem_data *ret = NULL;
 
+    if(sock_server) {
+        char *buf = malloc(128 * sizeof(char));
+        char *value = malloc(128 * sizeof(char));
 
-void *corrupt(void *socket_p) {
-    int socket_fd = *((int *) socket_p);
-    mem_data *node_ret = NULL;
-    char *key = malloc(128 * sizeof(char));
-    char *new_value = malloc(128 * sizeof(char));
+        ret = malloc(sizeof(mem_data));
 
+        ssize_t byte = 0;
+        temp_s *input = sock_server;
 
-    if (socket_p) {
+        struct sockaddr_in *addr_server = malloc(sizeof(struct sockaddr_in));
 
-        write(socket_fd, "K", 1);
-        key = receive_all(socket_fd, key); //leggo la chiave.
-        if (!key) {
-            write(socket_fd, "!sk", 3);
-            return (NULL);
+        addr_server->sin_family = AF_INET;
+        addr_server->sin_port = htons((uint16_t) input->addr_serv->port);
+        inet_aton(input->addr_serv->addr, &addr_server->sin_addr);
+
+        //creato il socket con il server dato in incarico
+        input->serv_fd = socket(PF_INET, SOCK_STREAM, 0);
+
+        byte = connect(input->serv_fd, (struct sockaddr *) addr_server, sizeof(*addr_server));
+        if (byte < 0) {close(input->serv_fd); return (NULL);}
+        byte = write(input->serv_fd, "search", 6);
+        if (byte <= 0) {close(input->serv_fd); return(NULL);}
+
+        buf = receive_all(input->serv_fd, buf);
+        if(!buf || strcmp(buf,"K") != 0){close(input->serv_fd); return(NULL);}
+        bzero(buf,strlen(buf));
+
+        //scrivo valore : x
+
+        byte = write(input->serv_fd,input->couple->key,strlen(input->couple->key));
+        if (byte <= 0) {close(input->serv_fd); return(NULL);}
+
+        buf = receive_all(input->serv_fd, buf);
+        if(!buf || strncmp(buf,"K",1) != 0){close(input->serv_fd); return(NULL);}
+        bzero(buf,strlen(buf));
+
+        //Ricezione valore : y
+
+        value = receive_all(input->serv_fd, value);
+        if(!value && strcmp(value,"") == 0){
+            write(input->serv_fd,"!K",2);
+            close(input->serv_fd);
+            return(NULL);
         }
 
-        write(socket_fd, "K", 1);
+        byte = write(input->serv_fd,"K",1);
+        if (byte <= 0) {close(input->serv_fd);}
 
-        new_value = receive_all(socket_fd, new_value); //leggo la value
-        if (!new_value) {
-            write(socket_fd, "!vl", 3);
-            return (NULL);
-        }
+        //Fine Ricezione
 
-        if (data_couples_list) {
-            node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
-            node_to_check->value = malloc(sizeof(mem_data));
-            ((mem_data *)node_to_check->value)->key = key;
-
-            node_ret = search_node(data_couples_list,node_to_check,&comp_couples);
-            //nodo non trovato.
-            if (!node_ret) {
-                write(socket_fd,"no_found", 8);
-            }else{
-                ((mem_data *)(((node_list *)node_ret)->value))->value = new_value;
-                write(socket_fd,"K",1);
-            }
-
-        }else {
-                write(socket_fd, "no_found",8);
-        }
-        close(socket_fd);
+        ret->key = input->couple->key;
+        ret->value = value;
     }
 
-    return (NULL);
+    return (ret);
 }
 
 
