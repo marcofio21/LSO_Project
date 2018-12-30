@@ -14,7 +14,7 @@ struct comm_temp_struct {
 
 int checked_p_range_input(char *input_string, int a, int b) {
     char string[64];
-    bzero(string, sizeof(string));
+    bzero(string, strlen(string));
 
     int input;
     int i;
@@ -80,7 +80,7 @@ server_addr *check_dot_addr(char *input, int length) {
 
     server_addr *ret = NULL;
     char *addr = malloc(15 * sizeof(char));
-    bzero(addr, sizeof(*addr));
+    bzero(addr, strlen(addr));
     char *port = malloc(4 * sizeof(char));
 
     //valore di appoggio per il singolo carattere convertito ad int
@@ -515,7 +515,7 @@ void *check_store(void *temp_struct) {
         *err = -2;
         return (err);
     }
-    bzero(buf, sizeof(*buf));
+    bzero(buf, strlen(buf));
 
 
     byte = write(input->serv_fd, input->couple->key,
@@ -530,7 +530,7 @@ void *check_store(void *temp_struct) {
         *err = -3;
         return (err);
     }
-    bzero(buf, sizeof(*buf));
+    bzero(buf, strlen(buf));
 
     byte = write(input->serv_fd, input->couple->value,
                  strlen(input->couple->value));
@@ -549,7 +549,7 @@ void *check_store(void *temp_struct) {
             return (err);
         }
     }
-    bzero(buf, sizeof(*buf));
+    bzero(buf, strlen(buf));
 
     byte = write(input->serv_fd, "wait", 4);
     if (byte <= 0) {
@@ -651,7 +651,7 @@ void *inner_comm_search(void *sock_server) {
 
         buf = receive_all(input->serv_fd, buf);
         if(!buf || strcmp(buf,"K") != 0){close(input->serv_fd); return(NULL);}
-        bzero(buf,sizeof(*buf));
+        bzero(buf,strlen(buf));
 
         //scrivo valore : x
 
@@ -660,7 +660,7 @@ void *inner_comm_search(void *sock_server) {
 
         buf = receive_all(input->serv_fd, buf);
         if(!buf || strncmp(buf,"K",1) != 0){close(input->serv_fd); return(NULL);}
-        bzero(buf,sizeof(*buf));
+        bzero(buf,strlen(buf));
 
         //Ricezione valore : y
 
@@ -844,7 +844,7 @@ void *search(void *socket_p){
                     if(!buf || strcmp(buf,"K")!= 0){
                         write(socket_fd,"!K",2);
                     }
-                    bzero(buf,sizeof(*buf));
+                    bzero(buf,strlen(buf));
                 }
             }else{write(socket_fd,"!K",2); close(socket_fd);}
         }
@@ -915,11 +915,11 @@ void *list(void *socket_p) {
         sprintf(buf, "%d", data_couples_list->num_node);
         check = write(socket, buf, strlen(buf));
         if (check < 0) { return (NULL); }
-        bzero(buf, sizeof(*buf));
+        bzero(buf, strlen(buf));
 
         buf = receive_all(socket, buf);
         if (!buf || (strcmp(buf, "K")) != 0) { return (NULL); }
-        bzero(buf, sizeof(*buf));
+        bzero(buf, strlen(buf));
 
         //se la lista non è vuota la scorro e leggo i nodi
         if (data_couples_list->num_node > 0) {
@@ -933,14 +933,14 @@ void *list(void *socket_p) {
 
                 buf = receive_all(socket, buf);
                 if (!buf || (strcmp(buf, "K")) != 0) { return (NULL); }
-                bzero(buf, sizeof(*buf));
+                bzero(buf, strlen(buf));
 
                 check = write(socket, t->value, strlen(t->value));//invio valore
                 if (check < 0) { return (NULL); }
 
                 buf = receive_all(socket, buf);
                 if (!buf || (strcmp(buf, "K")) != 0) { return (NULL); }
-                bzero(buf, sizeof(*buf));
+                bzero(buf,strlen(buf));
 
                 read_p = read_p->next;
                 if (read_p) {
@@ -991,7 +991,7 @@ void *lister_from_other_server(void *socket) {
                     comm_thread(&search, (void *) inn_serv_fd);
                 }
             }
-            bzero(buf,sizeof(*buf));
+            bzero(buf,strlen(buf));
         }
         inn_serv_fd = NULL;
     } while (!inn_serv_fd);
