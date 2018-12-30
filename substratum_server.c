@@ -451,7 +451,7 @@ void *store(void *socket_p) {
                     //il client sà che qualche thread ha qualche errore
                     char *buf = malloc(20 * sizeof(char));
                     sprintf(buf, "%d", *check_end_thr);
-                    write(socket_fd, "buf", 1);
+                    write(socket_fd, buf, strlen(buf));
                     free(buf);
                 } else {
                     for (int k = 0; k < servers_check_list->num_node; k++) {
@@ -604,7 +604,8 @@ void *inner_comm_check_store(void *sock_server) {
                 write(socket_s, "err_wait", 8);
                 return (NULL);
             }
-            memset(buf,'\0',sizeof(*buf));
+            bzero(buf,strlen(buf));
+
 
             //Inizio sezione critica
             buf = receive_all(socket_s, buf);
@@ -665,7 +666,7 @@ void *inner_comm_search(void *sock_server) {
         //Ricezione valore : y
 
         value = receive_all(input->serv_fd, value);
-        if(!value){
+        if(!value && strcmp(value,"") == 0){
             write(input->serv_fd,"!K",2);
             close(input->serv_fd);
             return(NULL);
@@ -795,11 +796,14 @@ void *search(void *socket_p){
 
                 }
                 //Scrivo il valore y al client.
-                check = write(socket_fd, node_ret->value, strlen(node_ret->value));
+                check = write(socket_fd, ((mem_data *)(node_ret->value))->value, strlen(((mem_data *)(node_ret->value))->value));
                 if (check < 0) {
                     //dealloco tutto
                     return (NULL);
                 }
+            }else{
+                //dealloco tutto
+                return (NULL);
             }
         }else if(port_entry == inner_port){
             //comunicazione tra server
@@ -831,9 +835,7 @@ void *search(void *socket_p){
                     close(socket_fd);
                     return(NULL); //lista inconsistente
                 }else{
-                    node_ret = ret_node->value;
-
-                    check = write(socket_fd,node_ret->value,strlen(node_ret->value));
+                    check = write(socket_fd,((mem_data *)(ret_node->value))->value,strlen(((mem_data *)(ret_node->value))->value));
                     if(check < 0) {
                         write(socket_fd, "!K", 2);
                         close(socket_fd);
