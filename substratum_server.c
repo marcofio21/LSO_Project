@@ -414,6 +414,7 @@ void *store(void *socket_p) {
                 }
             }
 
+
             //controllo il numero di server
             if (servers_check_list && servers_check_list->top_list) {
 
@@ -619,7 +620,7 @@ void *inner_comm_check_store(void *sock_server) {
 
 
             //MUTEX LOCKED
-            pthread_mutex_lock(data_couples_list->mutex);
+           // pthread_mutex_lock(data_couples_list->mutex);
 
             temp_node = create_new_couples_node(key, value);
 
@@ -631,7 +632,7 @@ void *inner_comm_check_store(void *sock_server) {
                 write(socket_s, "err_wait", 8);
 
                 //MUTEX UNLOCKED
-                pthread_mutex_unlock(data_couples_list->mutex);
+              //  pthread_mutex_unlock(data_couples_list->mutex);
 
                 return (NULL);
             }
@@ -644,7 +645,7 @@ void *inner_comm_check_store(void *sock_server) {
                 free(temp_node);
 
                 //MUTEX UNLOCKED
-                pthread_mutex_unlock(data_couples_list->mutex);
+               // pthread_mutex_unlock(data_couples_list->mutex);
 
                 return (NULL);
             }
@@ -652,7 +653,7 @@ void *inner_comm_check_store(void *sock_server) {
                 data_couples_list = insert_node(data_couples_list, temp_node);
 
                 //MUTEX UNLOCKED
-                pthread_mutex_unlock(data_couples_list->mutex);
+                //pthread_mutex_unlock(data_couples_list->mutex);
             }
             free(buf);
         }
