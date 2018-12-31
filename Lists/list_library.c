@@ -39,7 +39,6 @@ void * search_node(head_list *head, node_list *node_to_find, FCOMPVALUE fcompval
         p = head->top_list;
 
         while (p && !ret) {
-            pthread_mutex_lock(head->mutex);
             if (fcompvalue(p->value, node_to_find->value) == 0) {
                 ret = p;
             } else {
