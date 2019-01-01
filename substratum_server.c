@@ -707,12 +707,14 @@ void *corrupt(void *socket_p) {
         }
 
         if (data_couples_list) {
+
+            //MUTEX LOCKED
+            pthread_mutex_lock(data_couples_list->mutex);
+
             node_list *node_to_check = malloc(sizeof(node_list)); //Nodo d'appoggio per la ricerca
             node_to_check->value = malloc(sizeof(mem_data));
             ((mem_data *)node_to_check->value)->key = key;
 
-            //MUTEX LOCKED
-            pthread_mutex_lock(data_couples_list->mutex);
 
             node_ret = search_node(data_couples_list,node_to_check,&comp_couples);
 
@@ -785,13 +787,14 @@ void *search(void *socket_p){
             if (data_couples_list) {
                 void *node = create_new_couples_node(key, NULL);
 
+                //MUTEX LOCKED
+                pthread_mutex_lock(data_couples_list->mutex);
+
                 if (data_couples_list->num_node > 0) {
                     //cerco nella lista locale se c'è la chiave in input.
                     node_list *temp_node = malloc(sizeof(node_list));
                     temp_node->value = node;
 
-                    //MUTEX LOCKED
-                    pthread_mutex_lock(data_couples_list->mutex);
 
                     node_ret = search_node(data_couples_list, temp_node, &comp_couples);
                     if(node_ret){
@@ -814,9 +817,15 @@ void *search(void *socket_p){
                 }else{
                     //caso lista vuota
                     write(socket_fd, "no_found",8);
+
+                    //MUTEX UNLOCKED
+                    pthread_mutex_unlock(data_couples_list->mutex);
+
                     return(NULL);
                 }
 
+                //MUTEX UNLOCKED
+                pthread_mutex_unlock(data_couples_list->mutex);
 
                 //controllo il numero di server
                 if (servers_check_list && servers_check_list->top_list) {
@@ -849,9 +858,6 @@ void *search(void *socket_p){
                         if (!check_end_thr ||
                             (strcmp(couple_ret->key, swap_p->key) == 0 && strcmp(couple_ret->value, swap_p->value) != 0)) {
 
-                            //MUTEX UNLOCKED
-                            pthread_mutex_unlock(data_couples_list->mutex);
-
                             write(socket_fd, "ledge_corrupt", 13);
                             close(socket_fd);
 
@@ -864,9 +870,6 @@ void *search(void *socket_p){
                 }
                 //Scrivo il valore y al client.
                 check = write(socket_fd, ((mem_data *)(node_ret->value))->value, strlen(((mem_data *)(node_ret->value))->value));
-
-                //MUTEX UNLOCKED
-                pthread_mutex_unlock(data_couples_list->mutex);
 
                 if (check < 0) {
                     //dealloco tutto
@@ -892,8 +895,6 @@ void *search(void *socket_p){
             if(check<0){return(NULL);}
 
             if(data_couples_list){
-                //MUTEX LOCKED
-                pthread_mutex_lock(data_couples_list->mutex);
 
                 node_list   *temp_node = malloc(sizeof(node_list));
                 mem_data    *data_to_s = malloc(sizeof(mem_data));
@@ -909,8 +910,6 @@ void *search(void *socket_p){
                     write(socket_fd,"!K",2);
                     close(socket_fd);
 
-                    //MUTEX UNLOCKED
-                    pthread_mutex_unlock(data_couples_list->mutex);
 
                     return(NULL); //lista inconsistente
                 }else{
@@ -930,10 +929,6 @@ void *search(void *socket_p){
                         write(socket_fd,"!K",2);
                     }
                     bzero(buf,strlen(buf));
-
-                    //MUTEX UNLOCKED
-                    pthread_mutex_unlock(data_couples_list->mutex);
-
                 }
             }else{write(socket_fd,"!K",2); close(socket_fd);}
         }
