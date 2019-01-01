@@ -414,6 +414,8 @@ void *store(void *socket_p) {
                 }
             }
 
+            //MUTEX UNLOCKED
+            pthread_mutex_unlock(data_couples_list->mutex);
 
             //controllo il numero di server
             if (servers_check_list && servers_check_list->top_list) {
@@ -464,15 +466,16 @@ void *store(void *socket_p) {
                     write(socket_fd, buf, strlen(buf));
                     free(buf);
 
-                    //MUTEX UNLOCKED
-                    pthread_mutex_unlock(data_couples_list->mutex);
-
                 } else {
                     for (int k = 0; k < servers_check_list->num_node; k++) {
                         write(arr_t[k]->serv_fd, "K", 1);
                         close(arr_t[k]->serv_fd);
 
                     }
+
+                    //Tutti i threads, sono in attesa e quindi hanno prenotato con successo la lista
+                    //MUTEX LOCKED
+                    pthread_mutex_lock(data_couples_list->mutex);
 
                     data_couples_list = insert_node(data_couples_list, node);
 
@@ -486,13 +489,16 @@ void *store(void *socket_p) {
 
             } else { // altrimenti, non ci sono altri server e quindi non devo inoltrare nulla ed inserisco direttamente.
 
-                      data_couples_list = insert_node(data_couples_list, node);
+                //MUTEX LOCKED
+                pthread_mutex_lock(data_couples_list->mutex);
 
-                      //MUTEX UNLOCKED
-                       pthread_mutex_unlock(data_couples_list->mutex);
+                data_couples_list = insert_node(data_couples_list, node);
 
-                      //il client sà che l'inserimento è andato a buon fine
-                      write(socket_fd, "K", 1);
+                //MUTEX UNLOCKED
+                pthread_mutex_unlock(data_couples_list->mutex);
+
+                //il client sà che l'inserimento è andato a buon fine
+                write(socket_fd, "K", 1);
 
             }
 
@@ -566,9 +572,11 @@ void *check_store(void *temp_struct) {
     buf = receive_all(input->serv_fd, buf);
     //controllo sia che sia stata ricevuta Value che la coppia non sia già presente nel server contattato
     if (!buf || (strcmp(buf, "K")) != 0) {
-        if ((strcmp(buf, "!value")) != 0) {
+        if (buf && (strcmp(buf, "!value")) == 0) {
             *err = -4;
             return (err);
+        } else if(buf && (strcmp(buf,"comp_l") == 0)) {
+
         } else {
             *err = 0;
             return (err);
@@ -592,8 +600,10 @@ void *inner_comm_check_store(void *sock_server) {
         char *value = malloc(128 * sizeof(char));
         char *buf = malloc(128 * sizeof(char));
 
+        node_list *node_to_search = malloc(sizeof(node_list));
+        node_list *finded = NULL;
+
         void *temp_node = NULL;
-        node_list *check_node = NULL;
         ssize_t check = 0;
 
         if (data_couples_list) {
@@ -618,11 +628,18 @@ void *inner_comm_check_store(void *sock_server) {
                 return (NULL);
             }
 
-
-            //MUTEX LOCKED
-           // pthread_mutex_lock(data_couples_list->mutex);
-
             temp_node = create_new_couples_node(key, value);
+
+            //Controllo se il nodo è presente o meno nella lista.
+            node_to_search->value = temp_node;
+            finded = search_node(data_couples_list,node_to_search,&comp_couples);
+
+            if(finded){
+                write(socket_s,"comp_l",6);
+                free(temp_node);
+                free(node_to_search);
+                return(NULL);
+            }
 
             write(socket_s, "K", 1);
 
@@ -630,10 +647,6 @@ void *inner_comm_check_store(void *sock_server) {
             ssize_t byte = read(socket_s, buf, 4);
             if (byte < 0 || (strcmp(buf, "wait")) != 0) {
                 write(socket_s, "err_wait", 8);
-
-                //MUTEX UNLOCKED
-              //  pthread_mutex_unlock(data_couples_list->mutex);
-
                 return (NULL);
             }
             bzero(buf,strlen(buf));
@@ -643,17 +656,10 @@ void *inner_comm_check_store(void *sock_server) {
             buf = receive_all(socket_s, buf);
             if (!buf || (strcmp(buf, "abort")) == 0) {
                 free(temp_node);
-
-                //MUTEX UNLOCKED
-               // pthread_mutex_unlock(data_couples_list->mutex);
-
                 return (NULL);
             }
             if ((strncmp(buf, "K",1)) == 0) {
                 data_couples_list = insert_node(data_couples_list, temp_node);
-
-                //MUTEX UNLOCKED
-                //pthread_mutex_unlock(data_couples_list->mutex);
             }
             free(buf);
         }
@@ -1096,6 +1102,9 @@ void *lister_from_other_server(void *socket) {
 
         getsockname(*((int *) (socket)),(struct sockaddr *)&client,&size_sockclient);
 
+        //MUTEX LOCKED
+        pthread_mutex_lock(data_couples_list->mutex);
+
         if (*inn_serv_fd < 0) {
             no_breaking_exec_err(3);
         } else {
@@ -1111,6 +1120,10 @@ void *lister_from_other_server(void *socket) {
             }
             bzero(buf,strlen(buf));
         }
+
+        //MUTEX UNLOCKED
+        pthread_mutex_unlock(data_couples_list->mutex);
+
         inn_serv_fd = NULL;
     } while (!inn_serv_fd);
 

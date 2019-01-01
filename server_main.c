@@ -22,6 +22,10 @@ int main(int argc, char *argv[]) {
 
     server_addr *ret_addr = NULL;
 
+    data_couples_list = create_list();
+    data_couples_list->mutex = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(data_couples_list->mutex,NULL);
+
     if (argc != 3) {breaking_exec_err(0);}
 
     int t_port = (checked_p_range_input(argv[2], 0, 9999));
@@ -43,9 +47,6 @@ int main(int argc, char *argv[]) {
     check = first_conn_interface();
     if(check!=1){breaking_exec_err(3);}
 
-    data_couples_list = create_list();
-    data_couples_list->mutex = malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(data_couples_list->mutex,NULL);
 
     socket_client_fd = create_socket(this_server_client_addr->port,this_server_client_addr->addr);
     if (socket_client_fd < 0) {breaking_exec_err(4);}
