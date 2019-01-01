@@ -392,7 +392,7 @@ void *store(void *socket_p) {
             void *node = create_new_couples_node(key, value);
 
             //MUTEX LOCKED
-             pthread_mutex_lock(data_couples_list->mutex);
+            pthread_mutex_lock(data_couples_list->mutex);
 
             if (data_couples_list->num_node > 0) {
 
@@ -467,24 +467,51 @@ void *store(void *socket_p) {
                     free(buf);
 
                 } else {
-                    for (int k = 0; k < servers_check_list->num_node; k++) {
-                        write(arr_t[k]->serv_fd, "K", 1);
-                        close(arr_t[k]->serv_fd);
 
-                    }
+                    //Tutti i threads, sono in attesa e quindi hanno prenotato con successo la lista.
+                    //Eseguo una nuova ricerca per controllare che nessuno abbia inserito tale chiave, nel frattempo dei miei controlli.
+                    //Questo implica che fosse iniziata prima della store in corso.
 
-                    //Tutti i threads, sono in attesa e quindi hanno prenotato con successo la lista
                     //MUTEX LOCKED
                     pthread_mutex_lock(data_couples_list->mutex);
 
-                    data_couples_list = insert_node(data_couples_list, node);
+                    node_list *temp_node = malloc(sizeof(node_list));
+                    temp_node->value = node;
 
-                    //MUTEX UNLOCKED
-                     pthread_mutex_unlock(data_couples_list->mutex);
+                    node_ret = search_node(data_couples_list, temp_node, &comp_couples);
+
+                    temp_node->value = NULL;
+                    free(temp_node);
+                    if (node_ret) {
+                        write(socket_fd, "found", 5);
+
+                        //la key che si voleva inserire era stata già stata inserita da un altro client, prima di questo, ma non ancora ultimata.
+                        for (int k = 0; k < servers_check_list->num_node; k++) {
+                            write(arr_t[k]->serv_fd, "abort", 5);
+                            close(arr_t[k]->serv_fd);
+                        }
+
+                        //MUTEX UNLOCKED
+                        pthread_mutex_unlock(data_couples_list->mutex);
+
+                        return (NULL);
+                    }else {
+
+                        for (int k = 0; k < servers_check_list->num_node; k++) {
+                            write(arr_t[k]->serv_fd, "K", 1);
+                            close(arr_t[k]->serv_fd);
+
+                        }
+
+                        data_couples_list = insert_node(data_couples_list, node);
+
+                        //MUTEX UNLOCKED
+                        pthread_mutex_unlock(data_couples_list->mutex);
 
 
-                    //il client sà che l'inserimento è andato a buon fine
-                    write(socket_fd, "K", 1);
+                        //il client sà che l'inserimento è andato a buon fine
+                        write(socket_fd, "K", 1);
+                    }
                 }
 
             } else { // altrimenti, non ci sono altri server e quindi non devo inoltrare nulla ed inserisco direttamente.
@@ -575,8 +602,6 @@ void *check_store(void *temp_struct) {
         if (buf && (strcmp(buf, "!value")) == 0) {
             *err = -4;
             return (err);
-        } else if(buf && (strcmp(buf,"comp_l") == 0)) {
-
         } else {
             *err = 0;
             return (err);
@@ -629,17 +654,6 @@ void *inner_comm_check_store(void *sock_server) {
             }
 
             temp_node = create_new_couples_node(key, value);
-
-            //Controllo se il nodo è presente o meno nella lista.
-            node_to_search->value = temp_node;
-            finded = search_node(data_couples_list,node_to_search,&comp_couples);
-
-            if(finded){
-                write(socket_s,"comp_l",6);
-                free(temp_node);
-                free(node_to_search);
-                return(NULL);
-            }
 
             write(socket_s, "K", 1);
 
