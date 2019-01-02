@@ -261,7 +261,7 @@ int first_conn_interface() {
         conn = check_conn_to_other_server();
 
         if (conn == 1) {
-            sleep(5);
+            sleep(10);
         } else if (conn == -1) {
             breaking_exec_err(8);
         }
@@ -289,7 +289,6 @@ server_addr *create_list_other_server(char *conf_file_link) {
     int num_byte = -1;
     int offset = 0;
 
-    char *readed_addr = malloc(size_buf * sizeof(char));
     server_addr *temp_addr_node = NULL;
     server_addr *ret = NULL;
 
@@ -301,14 +300,13 @@ server_addr *create_list_other_server(char *conf_file_link) {
     check_servers_node *temp = NULL;
 
     while (read(fd, buf + i, 1) == 1) {
-        if (buf[i] == '\n' || buf[i] == 0x0) {
-            num_byte = i - offset;
-            strncpy(readed_addr, buf + offset, (size_t) num_byte);
-            temp_addr_node = check_dot_addr(readed_addr, num_byte);
+        if (buf[i] == '\n' || buf[i] == '\0') {
+
+            buf[i] = '\0';
+            temp_addr_node = check_dot_addr(buf,(int)(strlen(buf)));
 
             if (!temp_addr_node) { exit(-1); }
 
-            offset = i + 1;
             if (j >= 1) {
                 temp = create_new_node(temp_addr_node, 1, j);
                 servers_check_list = insert_node(servers_check_list, temp);
@@ -316,8 +314,13 @@ server_addr *create_list_other_server(char *conf_file_link) {
                 ret = temp_addr_node;
                 ++j;
             }
+
+            bzero(buf,strlen(buf));
+            i = 0;
+
+        }else {
+            ++i;
         }
-        ++i;
     }
 
     return (ret);
@@ -335,20 +338,15 @@ char *receive_all(int sockfd, char *buf) {
     ssize_t byte = -1;
     int i = 0;
 
-    /*
-    int dim_str = 128;
-    char *str = malloc(dim_str * sizeof(char));
-     */
-
-    //il while legge finché non viene restituito un valore minore del buffer,
-    //cioè quando si è letto l'ultima parte della stringa, e quindi meno di 64
-    //caratteri, oppure è 0.
-    //Continua, se si è letto tutti i caratteri al suo interno e potrebbero essercene altri.
     while ((byte = (read(sockfd, buf + i, 64))) == 64) {
         i += 64;
         if (i > 128) { return (NULL); }
     }
-    if (byte < 0) { return (NULL); }
+    if (byte < 0) {
+        return (NULL);
+    }else{
+        buf[byte] = '\0';
+    }
 
     return (buf);
 }
@@ -370,7 +368,9 @@ void *store(void *socket_p) {
 
     if (socket_p) {
         key = malloc(128 * sizeof(char));
+        bzero(key,strlen(key));
         value = malloc(128 * sizeof(char));
+        bzero(value,strlen(value));
 
 
         write(socket_fd, "K", 1);
@@ -447,7 +447,7 @@ void *store(void *socket_p) {
 
                 for (int j = 0; j < servers_check_list->num_node; j++) {
                     pthread_join(arr[j], (void **) &check_end_thr);
-                    if (check_end_thr) {
+                    if (!check_end_thr && (check_end_thr && *check_end_thr != -7)) {
                         f_err = 1;
                         break;
                     }
@@ -465,6 +465,9 @@ void *store(void *socket_p) {
                     sprintf(buf, "%d", *check_end_thr);
                     write(socket_fd, buf, strlen(buf));
                     free(buf);
+
+                    close(socket_fd);
+                    return(NULL);
 
                 } else {
 
@@ -614,24 +617,25 @@ void *check_store(void *temp_struct) {
         *err = -5;
         return (err);
     }
-
-    return (NULL);
+    *err = -7;
+    return (err);
 }
 void *inner_comm_check_store(void *sock_server) {
     if (sock_server) {
 
         int socket_s = *((int *) sock_server);
         char *key = malloc(128 * sizeof(char));
+        memset(key,'\0',sizeof(*key));
         char *value = malloc(128 * sizeof(char));
-        char *buf = malloc(128 * sizeof(char));
+        memset(value,'\0',sizeof(*value));
 
-        node_list *node_to_search = malloc(sizeof(node_list));
-        node_list *finded = NULL;
+        char *buf = malloc(128 * sizeof(char));
 
         void *temp_node = NULL;
         ssize_t check = 0;
 
         if (data_couples_list) {
+
 
             check = write(socket_s, "K", 1);
             if (check <= 0) {
@@ -640,7 +644,7 @@ void *inner_comm_check_store(void *sock_server) {
             }
 
             key = receive_all(socket_s, key);
-            if (!key || strlen(key) == 0 || strcmp(key, "abort") == 0) {
+            if (!key || strlen(key) == 0 || strcmp(key, "abort") == 0 || strcmp(key,"") == 0) {
                 write(socket_s, "!K", 2);
                 return (NULL);
             }
@@ -648,7 +652,7 @@ void *inner_comm_check_store(void *sock_server) {
             write(socket_s, "K", 1);
 
             value = receive_all(socket_s, value);
-            if (!value || strlen(value) == 0 || strcmp(value, "abort") == 0) {
+            if (!value || strlen(value) == 0 || strcmp(value, "abort") == 0 || strcmp(value,"") == 0) {
                 write(socket_s, "!value", 6);
                 return (NULL);
             }
@@ -657,9 +661,8 @@ void *inner_comm_check_store(void *sock_server) {
 
             write(socket_s, "K", 1);
 
-            buf = malloc(10 * sizeof(char));
             ssize_t byte = read(socket_s, buf, 4);
-            if (byte < 0 || (strcmp(buf, "wait")) != 0) {
+            if (byte < 0 || (strcmp(buf, "wait")) != 0 || (strcmp(buf, "abort")) == 0 || strcmp(buf,"") == 0) {
                 write(socket_s, "err_wait", 8);
                 return (NULL);
             }
@@ -668,14 +671,23 @@ void *inner_comm_check_store(void *sock_server) {
 
 
             buf = receive_all(socket_s, buf);
-            if (!buf || (strcmp(buf, "abort")) == 0) {
+            if (!buf || (strcmp(buf, "abort")) == 0 || (strcmp(buf, "")) == 0) {
                 free(temp_node);
                 return (NULL);
             }
             if ((strncmp(buf, "K",1)) == 0) {
+
+                //MUTEX LOCKED
+                pthread_mutex_lock(data_couples_list->mutex);
+
                 data_couples_list = insert_node(data_couples_list, temp_node);
+
+                //MUTEX UNLOCKED
+                pthread_mutex_unlock(data_couples_list->mutex);
             }
             free(buf);
+
+
         }
     }
     return (NULL);
@@ -1112,7 +1124,7 @@ void *lister_from_other_server(void *socket) {
         getsockname(*((int *) (socket)),(struct sockaddr *)&client,&size_sockclient);
 
         //MUTEX LOCKED
-        pthread_mutex_lock(data_couples_list->mutex);
+//        pthread_mutex_lock(data_couples_list->mutex);
 
         if (*inn_serv_fd < 0) {
             no_breaking_exec_err(3);
@@ -1131,7 +1143,7 @@ void *lister_from_other_server(void *socket) {
         }
 
         //MUTEX UNLOCKED
-        pthread_mutex_unlock(data_couples_list->mutex);
+//        pthread_mutex_unlock(data_couples_list->mutex);
 
         inn_serv_fd = NULL;
     } while (!inn_serv_fd);
