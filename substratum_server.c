@@ -328,9 +328,12 @@ server_addr *create_list_other_server(char *conf_file_link) {
 
 //Interfaccia che permette di creare un thread e di assegnargli il lavoro "job" che si vuole.
 pthread_t comm_thread(FJOBTHREAD *fjob_t, void *par) {
+    int check=-1;
     pthread_t tid;
-    pthread_create(&tid, NULL, fjob_t, par);
-
+    check=pthread_create(&tid, NULL, fjob_t, par);
+    if(check!=0){
+        breaking_exec_err(10);
+    }
     return (tid);
 }
 
@@ -665,6 +668,14 @@ void *inner_comm_check_store(void *sock_server) {
                 return (NULL);
             }
 
+            //DUMMY
+            write(1," nodo ricevuto: ",strlen(" nodo ricevuto: "));
+            write(1,key,strlen(key));
+            write(1," ",strlen(" "));
+            write(1,value,strlen(value));
+            write(1,"\n",strlen("\n"));
+
+
             temp_node = create_new_couples_node(key, value);
 
             write(socket_s, "K", 1);
@@ -676,7 +687,8 @@ void *inner_comm_check_store(void *sock_server) {
             }
             bzero(buf,strlen(buf));
 
-
+           //DUMMY
+            mem_data* coppia=malloc(sizeof(mem_data));
 
             buf = receive_all(socket_s, buf);
             if (!buf || (strcmp(buf, "abort")) == 0 || (strcmp(buf, "")) == 0) {
@@ -687,6 +699,16 @@ void *inner_comm_check_store(void *sock_server) {
                 //MUTEX LOCKED
                 pthread_mutex_lock(data_couples_list->mutex);
                 data_couples_list = insert_node(data_couples_list, temp_node);
+
+
+                coppia=(mem_data*)temp_node;
+                write(1,"---inseriti---\n",strlen("---inseriti---\n"));
+                write(1,coppia->key,strlen(coppia->key));
+                write(1," ",strlen(" "));
+                write(1,coppia->value,strlen(coppia->value));
+                write(1,"\n",strlen("\n"));
+
+
 
             }
             //MUTEX UNLOCKED
@@ -1131,6 +1153,10 @@ void *lister_from_other_server(void *socket) {
             no_breaking_exec_err(3);
         } else {
             readed = read(*inn_serv_fd, buf, 128);
+            write(1,"lettura per syncStore: ",strlen("lettura per syncStore: "));
+            write(1,buf,strlen(buf));
+            write(1,"\n",strlen("\n"));
+
             if (readed < 0) {
                 no_breaking_exec_err(3);
             } else {

@@ -15,6 +15,7 @@ char *pool_be_err[] = {
         "ERR_LISTEN",                       //7
         "ERR_NO_SUCH_SERVERS_LIST",         //8
         "NO_INIT_LIST!",                    //9
+        "ERR_CREAT_THREAD",                 //10
         NULL
 };
 
@@ -30,11 +31,6 @@ void            init_buf(){
     buf = malloc(size_buf * sizeof(char));
 }
 
-void            close_err_buf(){
-    free(buf);
-    buf = NULL;
-}
-
 void            no_breaking_exec_err        (int code){
     if(!buf){init_buf();}
     sprintf(buf,"%s\n\n",pool_err[code]);
@@ -47,13 +43,6 @@ void            breaking_exec_err           (int code){
     write(2, buf, strlen(buf));
     free(buf);
     exit(-1);
-}
-
-void            print_errno                 (int errno_code){
-    if(!buf){init_buf();}
-    sprintf(buf,"ERRNO : %d\n", errno_code);
-    write(2,buf, strlen(buf));
-    bzero(buf,sizeof(*buf));
 }
 
 void            ok_conn(){
