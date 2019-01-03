@@ -445,16 +445,25 @@ void *store(void *socket_p) {
 
                 } while (reading_point);
 
-                for (int j = 0; j < servers_check_list->num_node; j++) {
+                /*for (int j = 0; j < servers_check_list->num_node; j++)*/
+                int j = 0;
+                int tot_n = 0;
+                while(!check_end_thr){
                     pthread_join(arr[j], (void **) &check_end_thr);
                     if (!check_end_thr && (check_end_thr && *check_end_thr != -7)) {
                         f_err = 1;
                         break;
+                    }else if(*check_end_thr == -7){
+                        ++tot_n;
+                        if(tot_n == servers_check_list->num_node){
+                            break;
+                        }
                     }
+                    check_end_thr = NULL;
+                    j++;
                 }
 
                 //Ho trovato almeno un thread che mi ha restituito errore.
-                //va introdotta la logica per dare al client l'errore giusto
                 if (f_err == 1) {
                     for (int k = 0; k < servers_check_list->num_node; k++) {
                         write(arr_t[k]->serv_fd, "abort", 5);
@@ -503,7 +512,6 @@ void *store(void *socket_p) {
                         for (int k = 0; k < servers_check_list->num_node; k++) {
                             write(arr_t[k]->serv_fd, "K", 1);
                             close(arr_t[k]->serv_fd);
-
                         }
 
                         data_couples_list = insert_node(data_couples_list, node);
@@ -676,18 +684,14 @@ void *inner_comm_check_store(void *sock_server) {
                 return (NULL);
             }
             if ((strncmp(buf, "K",1)) == 0) {
-
                 //MUTEX LOCKED
                 pthread_mutex_lock(data_couples_list->mutex);
-
                 data_couples_list = insert_node(data_couples_list, temp_node);
 
-                //MUTEX UNLOCKED
-                pthread_mutex_unlock(data_couples_list->mutex);
             }
+            //MUTEX UNLOCKED
+            pthread_mutex_unlock(data_couples_list->mutex);
             free(buf);
-
-
         }
     }
     return (NULL);
@@ -1123,9 +1127,6 @@ void *lister_from_other_server(void *socket) {
 
         getsockname(*((int *) (socket)),(struct sockaddr *)&client,&size_sockclient);
 
-        //MUTEX LOCKED
-//        pthread_mutex_lock(data_couples_list->mutex);
-
         if (*inn_serv_fd < 0) {
             no_breaking_exec_err(3);
         } else {
@@ -1141,9 +1142,6 @@ void *lister_from_other_server(void *socket) {
             }
             bzero(buf,strlen(buf));
         }
-
-        //MUTEX UNLOCKED
-//        pthread_mutex_unlock(data_couples_list->mutex);
 
         inn_serv_fd = NULL;
     } while (!inn_serv_fd);
