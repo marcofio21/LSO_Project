@@ -10,6 +10,9 @@ server_addr             *this_server_inner_addr         = NULL;
 server_addr             *this_server_client_addr        = NULL;
 
 int main(int argc, char *argv[]) {
+    f_err               = 0;
+
+    int         t       = 1;
     int         check   = 0;
     int         dim_buf = 20;
     ssize_t     readed  = 0;
@@ -54,30 +57,37 @@ int main(int argc, char *argv[]) {
     while(check != 0) {
         client_fd = malloc(sizeof(int));
         *client_fd  = accept(socket_client_fd, NULL, NULL);
-        if (client_fd < 0) {
-            no_breaking_exec_err(0);
-        }else{
-            readed = read(*client_fd,buf,1);
-            if(readed < 0){
-                no_breaking_exec_err(3);
-            }else{
-                if(buf[0] =='s'){
-                    /*comando STORE */
-                    comm_thread(&store,client_fd);
-                }else if(buf[0] == 'c'){
-                    /*comand CORRUPT*/
-                    comm_thread(&corrupt,client_fd);
-                }else if(buf[0] == 'S'){
-                    /*comand SEARCH*/
-                    comm_thread(&search,client_fd);
-                }else if(buf[0] == 'l'){
-                    /*comand LIST*/
-                    comm_thread(&list,client_fd);
-                }else if(buf[0] == 'e'){
-                    /*comand EXIT*/
-                    /*comm_thread(chiude tutto);*/
+
+        t = conn_oth_server_control();
+        if(t != 1){
+            f_err = 1;
+        }
+
+        if(f_err == 0) {
+            if (client_fd < 0) {
+                no_breaking_exec_err(0);
+            } else {
+                readed = read(*client_fd, buf, 1);
+                if (readed < 0) {
+                    no_breaking_exec_err(3);
+                } else {
+                    if (buf[0] == 's') {
+                        /*comando STORE */
+                        comm_thread(&store, client_fd);
+                    } else if (buf[0] == 'c') {
+                        /*comand CORRUPT*/
+                        comm_thread(&corrupt, client_fd);
+                    } else if (buf[0] == 'S') {
+                        /*comand SEARCH*/
+                        comm_thread(&search, client_fd);
+                    } else if (buf[0] == 'l') {
+                        /*comand LIST*/
+                        comm_thread(&list, client_fd);
+                    }
                 }
             }
+        }else{
+            no_breaking_exec_err(4);
         }
         client_fd = NULL;
     }

@@ -221,7 +221,7 @@ int check_conn_to_other_server() {
             }
         } while (reading_point && finded_offline_server == 0);
 
-        if (finded_offline_server == 0) {
+        if (finded_offline_server == 1) {
             ret = 0;
         }
 
@@ -235,17 +235,16 @@ int first_conn_interface() {
     int ret = -1;
     int i = 0;
 
-    int retry_conn_count = 0;
-    int conn = 1;
+    int retry_conn_count    = 0;
+    int conn                = 0;
 
     int *end_list = malloc(sizeof(int));
     *end_list = 0;
 
     node_list *reading_point = NULL;
 
-    while (retry_conn_count < 10 && conn == 1) {
+    while (retry_conn_count < 10 && conn == 0) {
         ++retry_conn_count;
-
 
         retry_conn(retry_conn_count);
 
@@ -260,7 +259,7 @@ int first_conn_interface() {
 
         conn = check_conn_to_other_server();
 
-        if (conn == 1) {
+        if (conn == 0) {
             sleep(10);
         } else if (conn == -1) {
             breaking_exec_err(8);
@@ -274,6 +273,30 @@ int first_conn_interface() {
         bad_conn();
         ret = -1;
     }
+
+    return (ret);
+}
+
+int conn_oth_server_control() {
+    int ret;
+    int i = 0;
+
+    int retry_conn_count = 0;
+    int conn = 1;
+
+    int *end_list = malloc(sizeof(int));
+    *end_list = 0;
+
+    node_list *reading_point = NULL;
+    reading_point = servers_check_list->top_list;
+    do {
+        /*Si scorre l'intera lista dei server e ne controlla la disponibilità*/
+        test_server_conn(reading_point->value);
+        reading_point = reading_point->next;
+        ++i;
+    } while (reading_point);
+
+    ret = check_conn_to_other_server();
 
     return (ret);
 }
@@ -308,7 +331,7 @@ server_addr *create_list_other_server(char *conf_file_link) {
             if (!temp_addr_node) { exit(-1); }
 
             if (j >= 1) {
-                temp = create_new_node(temp_addr_node, 1, j);
+                temp = create_new_node(temp_addr_node);
                 servers_check_list = insert_node(servers_check_list, temp);
             } else {
                 ret = temp_addr_node;
@@ -367,6 +390,8 @@ void *store(void *socket_p) {
     int *check_end_thr = NULL;
     int f_err = 0;
 
+    ssize_t check;
+
     node_list *reading_point = NULL;
 
     if (socket_p) {
@@ -383,7 +408,10 @@ void *store(void *socket_p) {
             return (NULL);
         }
 
-        write(socket_fd, "K", 1);
+        check = write(socket_fd, "K", 1);
+        if(check <0){
+            breaking_exec_err(6);
+        }
 
         value = receive_all(socket_fd, value); //leggo la value
         if (!value) {
@@ -428,7 +456,6 @@ void *store(void *socket_p) {
                 temp_s *arr_t[servers_check_list->num_node];
 
                 int i = 0;
-                int comm_other_server_socketfd = 0;
                 reading_point = servers_check_list->top_list;
                 temp_s *t = NULL;
                 do {
@@ -1128,9 +1155,6 @@ void *lister_from_other_server(void *socket) {
             no_breaking_exec_err(3);
         } else {
             readed = read(*inn_serv_fd, buf, 128);
-            /*write(1,"lettura per syncStore: ",strlen("lettura per syncStore: "));
-            write(1,buf,strlen(buf));
-            write(1,"\n",strlen("\n"));*/
 
             if (readed < 0) {
                 no_breaking_exec_err(3);
