@@ -868,7 +868,7 @@ void *search(void *socket_p){
                 pthread_mutex_unlock(data_couples_list->mutex);
 
                 //controllo il numero di server
-                if (servers_check_list && servers_check_list->top_list) {
+                if (servers_check_list && servers_check_list->top_list && servers_check_list->num_node > 0) {
 
                     //creo array per i TID dei thread per la comunicazione con gli altri server
                     pthread_t arr[servers_check_list->num_node];

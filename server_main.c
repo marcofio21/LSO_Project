@@ -34,22 +34,36 @@ int main(int argc, char *argv[]) {
     int t_port = (checked_p_range_input(argv[2], 0, 9999));
     if (t_port < 0) {breaking_exec_err(1);}
 
-    this_server_inner_addr = create_list_other_server(argv[1]);
-    inner_port = this_server_inner_addr->port;
 
-    //ottenuto l'indirizzo a cui connettersi con gli altri server, questo sarà in comune anche con il client
-    this_server_client_addr->addr       = this_server_inner_addr->addr;
-    this_server_client_addr->port       = t_port;
+    this_server_inner_addr = create_list_other_server(argv[1]);
     client_port = t_port;
 
-    inner_socket_fd = create_socket(this_server_inner_addr->port,this_server_inner_addr->addr);
-    comm_thread(&lister_from_other_server,&inner_socket_fd);
-    if (inner_socket_fd < 0) {breaking_exec_err(4);}
 
     //socket in ascolto rispetto gli altri server.
-    check = first_conn_interface();
-    if(check!=1){breaking_exec_err(3);}
+    if(servers_check_list->num_node > 0) {
+        //vi sono altri server da coordinare
+        inner_port = this_server_inner_addr->port;
 
+        //ottenuto l'indirizzo a cui connettersi con gli altri server, questo sarà in comune anche con il client
+        this_server_client_addr->addr = this_server_inner_addr->addr;
+        this_server_client_addr->port = t_port;
+
+
+        inner_socket_fd = create_socket(this_server_inner_addr->port, this_server_inner_addr->addr);
+        comm_thread(&lister_from_other_server, &inner_socket_fd);
+        if (inner_socket_fd < 0) { breaking_exec_err(4); }
+
+        check = first_conn_interface();
+        if (check != 1) { breaking_exec_err(3); }
+    }else{
+        this_server_client_addr->addr = malloc(20 * sizeof(char));
+        strcpy(this_server_client_addr->addr,"127.0.0.1");
+        this_server_client_addr->port = t_port;
+        //imposto il controllo a vero, in quanto non esistono altri server.
+        check = 1;
+
+        write(1,"\nConnessione Stabilita!\n",24);
+    }
 
     socket_client_fd = create_socket(this_server_client_addr->port,this_server_client_addr->addr);
     if (socket_client_fd < 0) {breaking_exec_err(4);}
@@ -58,9 +72,11 @@ int main(int argc, char *argv[]) {
         client_fd = malloc(sizeof(int));
         *client_fd  = accept(socket_client_fd, NULL, NULL);
 
-        t = conn_oth_server_control();
-        if(t != 1){
-            f_err = 1;
+        if(servers_check_list->num_node > 0) {
+            t = conn_oth_server_control();
+            if (t != 1) {
+                f_err = 1;
+            }
         }
 
         if(f_err == 0) {
