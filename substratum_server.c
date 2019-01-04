@@ -502,7 +502,7 @@ void *store(void *socket_p) {
 
                         //la key che si voleva inserire era stata già stata inserita da un altro client, prima di questo, ma non ancora ultimata.
                         for (int k = 0; k < servers_check_list->num_node; k++) {
-                            write(arr_t[k]->serv_fd, "abort", 5);
+                            write(arr_t[k]->serv_fd, "fail", 4);
                             close(arr_t[k]->serv_fd);
                         }
 
@@ -612,7 +612,7 @@ void *check_store(void *temp_struct) {
     }
     buf = receive_all(input->serv_fd, buf);
     //controllo sia che sia stata ricevuta Value che la coppia non sia già presente nel server contattato
-    if (!buf || (strcmp(buf, "K")) != 0) {
+    if (!buf || (strncmp(buf, "K",1)) != 0) {
         if (buf && (strcmp(buf, "!value")) == 0) {
             *err = -4;
             return (err);
@@ -623,11 +623,6 @@ void *check_store(void *temp_struct) {
     }
     bzero(buf, strlen(buf));
 
-    byte = write(input->serv_fd, "wait", 4);
-    if (byte <= 0) {
-        *err = -5;
-        return (err);
-    }
     *err = -7;
     return (err);
 }
@@ -655,61 +650,41 @@ void *inner_comm_check_store(void *sock_server) {
             }
 
             key = receive_all(socket_s, key);
-            if (!key || strlen(key) == 0 || strcmp(key, "abort") == 0 || strcmp(key,"") == 0) {
+            if (!key || strlen(key) == 0 || strcmp(key, "fail") == 0) {
                 write(socket_s, "!K", 2);
                 return (NULL);
             }
 
-            write(socket_s, "K", 1);
+            check = write(socket_s, "K", 1);
+            if (check <= 0) {
+                no_breaking_exec_err(6);
+                return (NULL);
+            }
 
             value = receive_all(socket_s, value);
-            if (!value || strlen(value) == 0 || strcmp(value, "abort") == 0 || strcmp(value,"") == 0) {
+            if (!value || strlen(value) == 0 || strcmp(value, "fail") == 0) {
                 write(socket_s, "!value", 6);
                 return (NULL);
             }
 
-            //DUMMY
-            write(1," nodo ricevuto: ",strlen(" nodo ricevuto: "));
-            write(1,key,strlen(key));
-            write(1," ",strlen(" "));
-            write(1,value,strlen(value));
-            write(1,"\n",strlen("\n"));
-
-
             temp_node = create_new_couples_node(key, value);
 
-            write(socket_s, "K", 1);
-
-            ssize_t byte = read(socket_s, buf, 4);
-            if (byte < 0 || (strcmp(buf, "wait")) != 0 || (strcmp(buf, "abort")) == 0 || strcmp(buf,"") == 0) {
-                write(socket_s, "err_wait", 8);
+            check = write(socket_s, "K", 1);
+            if (check <= 0) {
+                no_breaking_exec_err(6);
                 return (NULL);
             }
-            bzero(buf,strlen(buf));
-
-           //DUMMY
-            mem_data* coppia=malloc(sizeof(mem_data));
 
             buf = receive_all(socket_s, buf);
-            if (!buf || (strcmp(buf, "abort")) == 0 || (strcmp(buf, "")) == 0) {
-                free(temp_node);
-                return (NULL);
-            }
             if ((strncmp(buf, "K",1)) == 0) {
                 //MUTEX LOCKED
                 pthread_mutex_lock(data_couples_list->mutex);
                 data_couples_list = insert_node(data_couples_list, temp_node);
 
 
-                coppia=(mem_data*)temp_node;
-                write(1,"---inseriti---\n",strlen("---inseriti---\n"));
-                write(1,coppia->key,strlen(coppia->key));
-                write(1," ",strlen(" "));
-                write(1,coppia->value,strlen(coppia->value));
-                write(1,"\n",strlen("\n"));
-
-
-
+            } else {
+                free(temp_node);
+                return (NULL);
             }
             //MUTEX UNLOCKED
             pthread_mutex_unlock(data_couples_list->mutex);
@@ -1153,9 +1128,9 @@ void *lister_from_other_server(void *socket) {
             no_breaking_exec_err(3);
         } else {
             readed = read(*inn_serv_fd, buf, 128);
-            write(1,"lettura per syncStore: ",strlen("lettura per syncStore: "));
+            /*write(1,"lettura per syncStore: ",strlen("lettura per syncStore: "));
             write(1,buf,strlen(buf));
-            write(1,"\n",strlen("\n"));
+            write(1,"\n",strlen("\n"));*/
 
             if (readed < 0) {
                 no_breaking_exec_err(3);
