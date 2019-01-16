@@ -25,7 +25,6 @@ typedef void *          (FJOBTHREAD)(void *fjob);
 
 int client_port;
 int inner_port;
-int f_err;
 
 //LISTA SERVER
 head_list       *servers_check_list;
@@ -46,8 +45,6 @@ server_addr *       check_dot_addr                      (char *input, int length
 
 //interfaccia che integra tutta la logica per il controllo dello stato degli altri server. restituirà 1 se sono online, oppure farà la EXIT direttamente.
 int                 first_conn_interface                ();
-
-int                 conn_oth_server_control             ();
 
 int                 create_socket                       (int port, char *ip);
 

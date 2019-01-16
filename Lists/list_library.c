@@ -65,7 +65,7 @@ head_list * delete_all_node (head_list *head){
 
     return(head);
 }
- */
+
 
 int modify_node(head_list *head, node_list *node_to_modify, void *new_value, FCOMPVALUE fcompvalue) {
     if(head && node_to_modify && new_value) {
@@ -88,4 +88,4 @@ node_list * get_head_list(head_list *list){
         list->top_list = list->top_list->next;
     }
     return(ret);
-}
+}*/

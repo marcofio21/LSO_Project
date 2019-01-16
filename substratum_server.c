@@ -444,7 +444,6 @@ void *store(void *socket_p) {
                     return (NULL);
                 }
             }
-
             //MUTEX UNLOCKED
             pthread_mutex_unlock(data_couples_list->mutex);
 
@@ -475,7 +474,6 @@ void *store(void *socket_p) {
 
                 } while (reading_point);
 
-                /*for (int j = 0; j < servers_check_list->num_node; j++)*/
                 int j = 0;
                 int tot_n = 0;
                 while(!check_end_thr){
@@ -496,7 +494,7 @@ void *store(void *socket_p) {
                 //Ho trovato almeno un thread che mi ha restituito errore.
                 if (f_err == 1) {
                     for (int k = 0; k < servers_check_list->num_node; k++) {
-                        write(arr_t[k]->serv_fd, "abort", 5);
+                        write(arr_t[k]->serv_fd, "fail", 4);
                         close(arr_t[k]->serv_fd);
                     }
                     //il client sà che qualche thread ha qualche errore
@@ -1142,14 +1140,9 @@ void *lister_from_other_server(void *socket) {
 
     ssize_t readed = 0;
 
-    struct sockaddr_in  client;
-    socklen_t           size_sockclient = sizeof(client);
-
     do {
         inn_serv_fd = malloc(sizeof(int));
         *inn_serv_fd = accept(*((int *) (socket)), NULL, NULL);
-
-        getsockname(*((int *) (socket)),(struct sockaddr *)&client,&size_sockclient);
 
         if (*inn_serv_fd < 0) {
             no_breaking_exec_err(3);
